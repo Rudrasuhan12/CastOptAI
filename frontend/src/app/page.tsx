@@ -1,65 +1,202 @@
-import Image from "next/image";
+"use client";
 
-export default function Home() {
+import { useState, useEffect, useCallback, useRef } from "react";
+import axios from "axios";
+import type { OptResult, WeatherData } from "@/types";
+
+import Sidebar from "@/components/Sidebar";
+import Header from "@/components/Header";
+import InputPanel from "@/components/InputPanel";
+import EmptyState from "@/components/EmptyState";
+import ResultsPanel from "@/components/ResultsPanel";
+
+const AI_SERVICE_URL = process.env.NEXT_PUBLIC_AI_SERVICE_URL || "http://localhost:8000";
+const WEATHER_API_KEY = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY || "";
+
+const DEMO_WEATHER: Record<string, WeatherData> = {
+  Delhi: { temp: 10, humidity: 45, desc: "haze" },
+  Mumbai: { temp: 32, humidity: 80, desc: "partly cloudy" },
+  Chennai: { temp: 30, humidity: 75, desc: "clear sky" },
+  Kolkata: { temp: 22, humidity: 65, desc: "mist" },
+  Bangalore: { temp: 26, humidity: 55, desc: "scattered clouds" },
+  Hyderabad: { temp: 28, humidity: 50, desc: "clear sky" },
+  Pune: { temp: 25, humidity: 48, desc: "few clouds" },
+  Ahmedabad: { temp: 35, humidity: 30, desc: "clear sky" },
+};
+
+
+interface OptContext {
+  city: string;
+  temp: number;
+  humidity: number;
+  targetStrength: number;
+  targetTime: number;
+  timestamp: string;
+}
+
+export default function Dashboard() {
+  const [city, setCity] = useState("Delhi");
+  const [targetTime, setTargetTime] = useState(12);
+  const [targetStrength, setTargetStrength] = useState(20);
+  const [weather, setWeather] = useState<WeatherData>({ temp: null, humidity: null, desc: "Loading..." });
+  const [weatherLoading, setWeatherLoading] = useState(false);
+
+  const [loading, setLoading] = useState(false);
+  const [result, setResult] = useState<OptResult | null>(null);
+  const [selectedStrategy, setSelectedStrategy] = useState(0);
+  const [error, setError] = useState("");
+  const [activeTab, setActiveTab] = useState<"results" | "whatif" | "learn">("results");
+  const [optContext, setOptContext] = useState<OptContext | null>(null);
+  const [paramsChanged, setParamsChanged] = useState(false);
+
+
+  const hasRunRef = useRef(false);
+  const autoRunTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  const fetchWeather = useCallback(async (selectedCity: string) => {
+    setCity(selectedCity);
+    if (!WEATHER_API_KEY) {
+      setWeather(DEMO_WEATHER[selectedCity] || { temp: 25, humidity: 60, desc: "moderate" });
+      return;
+    }
+    setWeatherLoading(true);
+    try {
+      const res = await axios.get(
+        `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(selectedCity)}&units=metric&appid=${WEATHER_API_KEY}`
+      );
+      setWeather({
+        temp: Math.round(res.data.main.temp),
+        humidity: res.data.main.humidity,
+        desc: res.data.weather[0].description,
+      });
+    } catch {
+      setWeather(DEMO_WEATHER[selectedCity] || { temp: 25, humidity: 60, desc: "fetch failed" });
+    }
+    setWeatherLoading(false);
+  }, []);
+
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  useEffect(() => {
+    fetchWeather(city);
+  }, []);
+
+  const handleOptimize = useCallback(async () => {
+    if (weather.temp === null) {
+      setError("Please select a city first.");
+      return;
+    }
+    setLoading(true);
+    setError("");
+    setParamsChanged(false);
+    try {
+      const res = await axios.post(`${AI_SERVICE_URL}/optimize`, {
+        target_strength: targetStrength,
+        target_time: targetTime,
+        temp: weather.temp,
+        humidity: weather.humidity,
+      });
+      if (res.data.status === "success") {
+        setResult(res.data);
+        setSelectedStrategy(0);
+        setActiveTab("results");
+        hasRunRef.current = true;
+
+        setOptContext({
+          city,
+          temp: weather.temp,
+          humidity: weather.humidity!,
+          targetStrength,
+          targetTime,
+          timestamp: new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
+        });
+      } else {
+        setError(res.data.message || "Optimization failed.");
+      }
+    } catch {
+      setError("Cannot connect to CastOpt AI service. Ensure FastAPI is running on port 8000.");
+    }
+    setLoading(false);
+  }, [weather, targetStrength, targetTime, city]);
+
+
+  useEffect(() => {
+
+    if (weather.temp === null) return;
+
+    setParamsChanged(true);
+
+
+    if (autoRunTimerRef.current) clearTimeout(autoRunTimerRef.current);
+    autoRunTimerRef.current = setTimeout(() => {
+      handleOptimize();
+    }, 1500);
+
+    return () => {
+      if (autoRunTimerRef.current) clearTimeout(autoRunTimerRef.current);
+    };
+  }, [city, targetTime, targetStrength, weather.temp, weather.humidity]);
+
   return (
-    <div className="flex min-h-screen items-center justify-center bg-zinc-50 font-sans dark:bg-black">
-      <main className="flex min-h-screen w-full max-w-3xl flex-col items-center justify-between py-32 px-16 bg-white dark:bg-black sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={100}
-          height={20}
-          priority
-        />
-        <div className="flex flex-col items-center gap-6 text-center sm:items-start sm:text-left">
-          <h1 className="max-w-xs text-3xl font-semibold leading-10 tracking-tight text-black dark:text-zinc-50">
-            To get started, edit the page.tsx file.
-          </h1>
-          <p className="max-w-md text-lg leading-8 text-zinc-600 dark:text-zinc-400">
-            Looking for a starting point or more instructions? Head over to{" "}
-            <a
-              href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Templates
-            </a>{" "}
-            or the{" "}
-            <a
-              href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-              className="font-medium text-zinc-950 dark:text-zinc-50"
-            >
-              Learning
-            </a>{" "}
-            center.
-          </p>
-        </div>
-        <div className="flex flex-col gap-4 text-base font-medium sm:flex-row">
-          <a
-            className="flex h-12 w-full items-center justify-center gap-2 rounded-full bg-foreground px-5 text-background transition-colors hover:bg-[#383838] dark:hover:bg-[#ccc] md:w-[158px]"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={16}
-              height={16}
-            />
-            Deploy Now
-          </a>
-          <a
-            className="flex h-12 w-full items-center justify-center rounded-full border border-solid border-black/[.08] px-5 transition-colors hover:border-transparent hover:bg-black/[.04] dark:border-white/[.145] dark:hover:bg-[#1a1a1a] md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=appdir-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Documentation
-          </a>
-        </div>
-      </main>
+    <div className="flex h-screen w-full bg-transparent overflow-hidden">
+      <Sidebar />
+      <div className="flex-1 flex flex-col h-full bg-transparent">
+        <Header />
+        <main className="flex-1 overflow-auto p-4 md:p-8">
+          <div className="max-w-[1400px] mx-auto w-full">
+            <div className="flex items-center justify-between mb-8 animate-assembly">
+              <div>
+                <h1 className="text-3xl font-extrabold text-[#0F172A] tracking-tight">Optimization Hub</h1>
+                <p className="text-[13px] text-[#64748B] font-medium mt-1">Configure parameters and execute AI mix optimizations.</p>
+              </div>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-12 gap-8">
+
+              <div className="lg:col-span-4 max-w-[420px] w-full">
+                <InputPanel
+                  city={city} targetTime={targetTime} targetStrength={targetStrength}
+                  weather={weather} weatherLoading={weatherLoading}
+                  loading={loading} error={error}
+                  onCityChange={fetchWeather}
+                  onTargetTimeChange={setTargetTime}
+                  onTargetStrengthChange={setTargetStrength}
+                  onOptimize={handleOptimize}
+                />
+              </div>
+
+
+              <div className="lg:col-span-8">
+                {!result && !loading && <EmptyState />}
+
+                {loading && (
+                  <div className="h-full flex flex-col items-center justify-center p-12 text-[#94A3B8] animate-pulse-intense">
+                    <div className="w-16 h-16 border-4 border-[#E2E8F0] border-t-[#0F172A] rounded-full animate-spin mb-6" />
+                    <p className="text-[14px] font-extrabold text-[#0F172A] tracking-wider uppercase">Running AI Simulations...</p>
+                    <p className="text-[11px] font-mono-data mt-2 text-[#64748B]">
+                      Synthesizing {targetStrength} MPa in {targetTime}h @ {weather.temp}°C / {weather.humidity}% RH — {city}
+                    </p>
+                  </div>
+                )}
+
+                {result && !loading && (
+                  <ResultsPanel
+                    result={result}
+                    selectedStrategy={selectedStrategy}
+                    onSelectStrategy={setSelectedStrategy}
+                    activeTab={activeTab}
+                    onTabChange={setActiveTab}
+                    weather={{ temp: weather.temp, humidity: weather.humidity }}
+                    targetStrength={targetStrength}
+                    targetTime={targetTime}
+                    optContext={optContext}
+                    paramsChanged={paramsChanged}
+                  />
+                )}
+              </div>
+            </div>
+          </div>
+        </main>
+      </div>
     </div>
   );
 }
