@@ -1,52 +1,46 @@
 "use client";
 
 import React from "react";
-import { Brain, ChevronRight, Zap, Shield, Activity } from "lucide-react";
+import { Zap, ShieldCheck, Activity, BrainCircuit } from "lucide-react";
 
 export default function EmptyState() {
     return (
-        <div className="card flex flex-col items-center justify-center min-h-[480px] text-center animate-scale-in">
-            {/* Icon */}
-            <div className="w-16 h-16 rounded-2xl bg-[#F5F2EC] border border-[#DDD8CE] flex items-center justify-center mb-6">
-                <Brain className="w-8 h-8 text-[#0D9488]" />
+        <div className="h-full flex flex-col items-center justify-center text-center p-8 animate-assembly delay-200">
+
+            <div className="relative w-32 h-32 mb-8 group cursor-pointer">
+
+                <div className="absolute inset-0 rounded-full border-2 border-dashed border-[#CBD5E1] animate-[spin_20s_linear_infinite]" />
+
+
+                <div className="absolute inset-2 rounded-full border border-[#E2E8F0] bg-white shadow-[0_4px_24px_rgba(15,23,42,0.06)] flex items-center justify-center transition-transform duration-500 group-hover:scale-105">
+                    <BrainCircuit className="w-12 h-12 text-[#FFCB05] drop-shadow-[0_2px_4px_rgba(15,23,42,0.1)]" />
+                </div>
+
+
+                <div className="absolute bottom-3 right-3 w-4 h-4 bg-[#10B981] rounded-full border-2 border-white shadow-sm flex items-center justify-center z-10">
+                    <div className="w-2 h-2 bg-white rounded-full animate-pulse" />
+                </div>
             </div>
 
-            {/* Text */}
-            <h3 className="text-lg font-bold text-[#1C1917] mb-2">
-                Ready to Optimize
-            </h3>
-            <p className="text-[13px] text-[#78716C] max-w-sm leading-relaxed">
-                Enter your project parameters and click{" "}
-                <span className="font-bold text-[#0D9488]">Optimize Strategy</span>{" "}
-                to get AI-powered mix design recommendations.
+            <h2 className="text-2xl font-bold text-[#0F172A] mb-3 tracking-tight">AI Master Control Offline</h2>
+            <p className="text-[13px] text-[#64748B] max-w-sm mx-auto mb-10 leading-relaxed font-medium">
+                Configure your project boundaries and initiate the quantum optimization engine to assemble AI-driven mix designs.
             </p>
 
-            {/* Feature chips */}
-            <div className="flex items-center gap-2 mt-6">
+            <div className="flex items-center gap-4 justify-center">
                 {[
-                    { icon: Zap, label: "3 AI Strategies" },
-                    { icon: Shield, label: "94%+ Confidence" },
-                    { icon: Activity, label: "Real-time Results" },
-                ].map((item) => {
+                    { icon: Zap, text: "Multi-Strategy AI", delay: "delay-300" },
+                    { icon: ShieldCheck, text: "94% Confidence", delay: "delay-400" },
+                    { icon: Activity, text: "Live Telemetry", delay: "delay-500" },
+                ].map((item, i) => {
                     const Icon = item.icon;
                     return (
-                        <div
-                            key={item.label}
-                            className="flex items-center gap-1.5 text-[11px] font-semibold text-[#78716C] bg-[#F5F2EC] border border-[#DDD8CE] rounded-full px-3 py-1.5"
-                        >
-                            <Icon className="w-3 h-3 text-[#0D9488]" />
-                            {item.label}
+                        <div key={i} className={`animate-assembly ${item.delay} flex items-center gap-2 bg-white border border-[#E2E8F0] px-4 py-2 rounded-lg shadow-[2px_2px_0px_#E2E8F0]`}>
+                            <Icon className="w-4 h-4 text-[#0F172A]" />
+                            <span className="text-[11px] font-bold text-[#0F172A] tracking-wide">{item.text}</span>
                         </div>
                     );
                 })}
-            </div>
-
-            {/* Status */}
-            <div className="flex items-center gap-1.5 mt-6 text-[10px] text-[#A8A29E]">
-                <span className="status-dot status-dot-green" />
-                AI Model Ready
-                <ChevronRight className="w-3 h-3" />
-                Multi-Strategy Engine
             </div>
         </div>
     );

@@ -13,8 +13,8 @@ interface CostComparisonChartProps {
 
 export default function CostComparisonChart({ traditional, optimized }: CostComparisonChartProps) {
     const data = [
-        { name: "Traditional", cost: Math.round(traditional), fill: "#C4BDB2" },
-        { name: "AI Optimized", cost: Math.round(optimized), fill: "#0D9488" },
+        { name: "Traditional", cost: Math.round(traditional), fill: "#94A3B8" },
+        { name: "AI Optimized Mix", cost: Math.round(optimized), fill: "#0F172A" },
     ];
 
     const savings = traditional - optimized;
@@ -24,33 +24,41 @@ export default function CostComparisonChart({ traditional, optimized }: CostComp
         <div className="w-full">
             <div className="h-[240px]">
                 <ResponsiveContainer width="100%" height="100%">
-                    <BarChart data={data} margin={{ top: 30, right: 20, left: 0, bottom: 5 }} barSize={56}>
-                        <CartesianGrid strokeDasharray="3 3" stroke="#EDE9E0" vertical={false} />
+                    <BarChart data={data} margin={{ top: 30, right: 20, left: 0, bottom: 5 }} barSize={64}>
+                        <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" vertical={false} />
                         <XAxis
                             dataKey="name"
-                            tick={{ fontSize: 12, fontWeight: 600, fill: "#78716C" }}
-                            stroke="#DDD8CE"
+                            tick={{ fontSize: 11, fontWeight: 800, fill: "#64748B", fontFamily: "var(--font-sans)" }}
+                            stroke="#CBD5E1"
+                            axisLine={{ strokeWidth: 2 }}
+                            tickFormatter={(value) => value.toUpperCase()}
                         />
-                        <YAxis tick={{ fontSize: 11, fill: "#A8A29E", fontFamily: "var(--font-mono)" }} stroke="#DDD8CE" />
+                        <YAxis
+                            tick={{ fontSize: 11, fill: "#94A3B8", fontFamily: "var(--font-mono)", fontWeight: 700 }}
+                            stroke="#CBD5E1"
+                            axisLine={false}
+                            tickLine={false}
+                        />
                         <Tooltip
                             contentStyle={{
-                                borderRadius: "8px",
-                                border: "1px solid #DDD8CE",
-                                boxShadow: "0 4px 16px rgba(28,25,23,0.08)",
+                                borderRadius: "4px",
+                                border: "1px solid #0F172A",
+                                boxShadow: "3px 3px 0px rgba(15,23,42,1)",
                                 fontSize: 12,
                                 background: "#FFFFFF",
-                                color: "#1C1917",
+                                color: "#0F172A",
+                                fontWeight: 800,
                             }}
+                            cursor={{ fill: "#F1F5F9" }}
                             formatter={(value) => [`₹${value}`]}
                         />
-                        <Bar dataKey="cost" radius={[6, 6, 0, 0]}>
-                            {data.map((entry, index) => (
-                                <Cell key={index} fill={entry.fill} />
-                            ))}
+                        <Bar dataKey="cost" radius={[0, 0, 0, 0]}>
+                            <Cell fill="#E2E8F0" stroke="#94A3B8" strokeWidth={1} />
+                            <Cell fill="#FFCB05" stroke="#0F172A" strokeWidth={2} />
                             <LabelList
                                 dataKey="cost"
                                 position="top"
-                                style={{ fontSize: 12, fontWeight: 700, fill: "#78716C", fontFamily: "var(--font-mono)" }}
+                                style={{ fontSize: 12, fontWeight: 800, fill: "#0F172A", fontFamily: "var(--font-mono)" }}
                                 formatter={(v) => `₹${v}`}
                             />
                         </Bar>
@@ -58,9 +66,10 @@ export default function CostComparisonChart({ traditional, optimized }: CostComp
                 </ResponsiveContainer>
             </div>
             {savings > 0 && (
-                <div className="text-center mt-2">
-                    <span className="inline-flex items-center gap-1.5 bg-[#CCFBF1] text-[#0D9488] text-[12px] font-bold px-3 py-1.5 rounded-lg font-mono-data">
-                        Saving ₹{Math.round(savings)} per m³ ({savingsPct}% reduction)
+                <div className="text-center mt-3">
+                    <span className="inline-flex items-center gap-2 bg-[#0F172A] text-white text-[11px] font-bold px-3 py-1.5 rounded-full uppercase tracking-wider shadow-[2px_2px_0px_#CBD5E1]">
+                        <span className="w-2 h-2 rounded-full bg-[#10B981] animate-pulse"></span>
+                        Saving ₹{Math.round(savings)}/m³ ({savingsPct}%)
                     </span>
                 </div>
             )}

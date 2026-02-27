@@ -7,11 +7,15 @@ import {
     Clock,
     CheckCircle2,
     AlertTriangle,
+    AlertCircle,
     Pause,
+    ChevronRight,
     ArrowRight,
     Thermometer,
     MapPin,
     Calendar,
+    Filter,
+    Plus,
 } from "lucide-react";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
@@ -84,127 +88,144 @@ const CASTINGS = [
     },
 ];
 
-const STATUS_CONFIG: Record<string, { icon: React.ElementType; bg: string; text: string; label: string }> = {
-    curing: { icon: Activity, bg: "bg-[#CCFBF1]", text: "text-[#0D9488]", label: "Curing" },
-    completed: { icon: CheckCircle2, bg: "bg-[#ECFDF5]", text: "text-[#059669]", label: "Completed" },
-    paused: { icon: Pause, bg: "bg-[#FEF3C7]", text: "text-[#D97706]", label: "Paused" },
-    alert: { icon: AlertTriangle, bg: "bg-red-50", text: "text-[#DC2626]", label: "Alert" },
+
+const STATUS_CONFIG: Record<string, { icon: React.ElementType; color: string; bg: string; border: string; label: string }> = {
+    curing: { icon: Activity, color: "text-[#D97706]", bg: "bg-[#FEF3C7]", border: "border-[#FDE68A]", label: "Curing" },
+    completed: { icon: CheckCircle2, color: "text-[#16A34A]", bg: "bg-[#D1FAE5]", border: "border-[#A7F3D0]", label: "Completed" },
+    paused: { icon: Pause, color: "text-[#475569]", bg: "bg-[#F1F5F9]", border: "border-[#E2E8F0]", label: "Paused" },
+    alert: { icon: AlertTriangle, color: "text-[#DC2626]", bg: "bg-[#FEE2E2]", border: "border-[#FECACA]", label: "Alert" },
 };
 
-export default function ActiveCastingsPage() {
+
+const getStatusConfig = (status: string) => {
+    return STATUS_CONFIG[status] || STATUS_CONFIG.curing; // Default to curing if status not found
+};
+
+export default function ActiveCastings() {
+
+    const totalJobs = CASTINGS.length;
     const curingCount = CASTINGS.filter((c) => c.status === "curing").length;
     const completedCount = CASTINGS.filter((c) => c.status === "completed").length;
+    const pausedCount = CASTINGS.filter((c) => c.status === "paused").length;
+    const alertCount = CASTINGS.filter((c) => c.status === "alert").length; // Assuming 'alert' status might exist
 
     return (
-        <div className="flex h-screen font-[family-name:var(--font-inter)] text-[#1C1917]">
+        <div className="flex h-screen w-full bg-transparent overflow-hidden">
             <Sidebar />
-            <div className="flex-1 flex flex-col overflow-hidden">
-                <Header showExport={false} onExport={() => { }} />
-                <div className="flex-1 overflow-y-auto bg-[#F5F2EC]">
-                    <div className="p-6 max-w-[1400px] mx-auto">
-                        {/* Page header */}
-                        <div className="mb-6">
-                            <h2 className="text-xl font-bold text-[#1C1917] flex items-center gap-2">
-                                <Activity className="w-5 h-5 text-[#0D9488]" />
-                                Active Castings
-                            </h2>
-                            <p className="text-[13px] text-[#78716C] mt-1">
-                                Monitor all ongoing precast casting jobs across yards
-                            </p>
+            <div className="flex-1 flex flex-col h-full bg-transparent">
+                <Header showExport={false} onExport={() => { }} /> {/* Retained Header props from original */}
+                <main className="flex-1 overflow-auto p-4 md:p-8">
+                    <div className="max-w-[1400px] mx-auto w-full">
+                        <div className="flex items-center justify-between mb-8 animate-assembly">
+                            <div>
+                                <h1 className="text-3xl font-extrabold text-[#0F172A] tracking-tight">Active Castings</h1>
+                                <p className="text-[13px] text-[#64748B] font-medium mt-1">Live tracking and status of ongoing precast production.</p>
+                            </div>
+                            <div className="flex items-center gap-3">
+                                <button className="flex items-center gap-2 px-4 py-2 bg-white border border-[#CBD5E1] text-[#0F172A] rounded-md text-[12px] font-bold shadow-[2px_2px_0px_#E2E8F0] hover:shadow-[3px_3px_0px_#CBD5E1] hover:-translate-y-px transition-all">
+                                    <Filter className="w-4 h-4" /> Filter
+                                </button>
+                                <button className="btn-primary flex items-center gap-2 px-4 py-2 bg-[#0F172A] text-white rounded-md text-[12px] font-bold shadow-[2px_2px_0px_#64748B] hover:shadow-[3px_3px_0px_#334155] hover:-translate-y-px transition-all">
+                                    <Plus className="w-4 h-4" /> New Casting
+                                </button>
+                            </div>
                         </div>
 
-                        {/* Summary cards */}
-                        <div className="grid grid-cols-4 gap-4 mb-6">
+
+                        <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
                             {[
-                                { label: "Total Jobs", value: CASTINGS.length, color: "#1C1917" },
-                                { label: "Curing", value: curingCount, color: "#0D9488" },
-                                { label: "Completed", value: completedCount, color: "#059669" },
-                                { label: "Paused / Alert", value: CASTINGS.length - curingCount - completedCount, color: "#D97706" },
-                            ].map((s) => (
-                                <div key={s.label} className="card p-4">
-                                    <p className="label mb-1">{s.label}</p>
-                                    <p className="text-2xl font-extrabold font-mono-data" style={{ color: s.color }}>
-                                        {s.value}
-                                    </p>
+                                { label: "Total Jobs", value: totalJobs, icon: Activity, color: "text-[#2563EB]" },
+                                { label: "In Curing", value: curingCount, icon: Thermometer, color: "text-[#D97706]" },
+                                { label: "Completed", value: completedCount, icon: CheckCircle2, color: "text-[#16A34A]" },
+                                { label: "Paused / Alert", value: pausedCount + alertCount, icon: AlertCircle, color: "text-[#DC2626]" },
+                            ].map((stat, i) => (
+                                <div key={i} className={`card p-5 animate-assembly delay-${(i + 1) * 100} shadow-[3px_3px_0px_#E2E8F0] bg-white rounded-lg border border-[#E2E8F0]`}>
+                                    <div className="flex items-center gap-3 mb-2">
+                                        <stat.icon className={`w-5 h-5 ${stat.color}`} />
+                                        <h3 className="text-[12px] font-extrabold text-[#64748B] uppercase tracking-widest">{stat.label}</h3>
+                                    </div>
+                                    <p className="text-3xl font-extrabold text-[#0F172A] font-mono-data tracking-tight">{stat.value}</p>
                                 </div>
                             ))}
                         </div>
 
-                        {/* Castings table */}
-                        <div className="card overflow-hidden">
-                            <div className="px-5 py-3 border-b border-[#DDD8CE] bg-[#F5F2EC]">
-                                <p className="label">All Casting Jobs</p>
+
+                        <div className="card overflow-hidden animate-assembly delay-500 border-2 border-[#0F172A] rounded-lg bg-white">
+                            <div className="px-5 py-4 bg-[#0F172A] flex justify-between items-center text-white">
+                                <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-md bg-[#1E293B] flex items-center justify-center border border-[#334155]">
+                                        <Activity className="w-4 h-4 text-[#10B981]" />
+                                    </div>
+                                    <h3 className="text-[13px] font-extrabold tracking-wide uppercase">Production Roster</h3>
+                                </div>
                             </div>
-                            <div className="divide-y divide-[#EDE9E0]">
-                                {CASTINGS.map((c) => {
-                                    const st = STATUS_CONFIG[c.status] || STATUS_CONFIG.curing;
-                                    const Icon = st.icon;
-                                    const progress = Math.min(100, (c.currentStrength / c.targetStrength) * 100);
-                                    return (
-                                        <div key={c.id} className="px-5 py-4 hover:bg-[#F5F2EC]/50 transition-colors">
-                                            <div className="flex items-center justify-between mb-2">
-                                                <div className="flex items-center gap-3">
-                                                    <span className="text-[11px] font-bold text-[#A8A29E] font-mono-data">{c.id}</span>
-                                                    <h4 className="text-[13px] font-bold text-[#1C1917]">{c.product}</h4>
-                                                    <span className={`inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold ${st.bg} ${st.text}`}>
-                                                        <Icon className="w-3 h-3" />
-                                                        {st.label}
-                                                    </span>
-                                                </div>
-                                                <div className="flex items-center gap-4 text-[11px] text-[#78716C]">
-                                                    <span className="flex items-center gap-1">
-                                                        <MapPin className="w-3 h-3" /> {c.location}
-                                                    </span>
-                                                    <span className="flex items-center gap-1">
-                                                        <Thermometer className="w-3 h-3" /> {c.temp}°C
-                                                    </span>
-                                                    <span className="flex items-center gap-1">
-                                                        <Calendar className="w-3 h-3" /> {c.startTime}
-                                                    </span>
-                                                </div>
-                                            </div>
+                            <div className="overflow-x-auto">
+                                <table className="w-full text-left border-collapse">
+                                    <thead>
+                                        <tr className="border-b border-[#E2E8F0] bg-[#F8FAFC]">
+                                            <th className="p-4 text-[11px] font-extrabold text-[#64748B] uppercase tracking-wider">ID / Location</th>
+                                            <th className="p-4 text-[11px] font-extrabold text-[#64748B] uppercase tracking-wider">Status</th>
+                                            <th className="p-4 text-[11px] font-extrabold text-[#64748B] uppercase tracking-wider">Progress</th>
+                                            <th className="p-4 text-[11px] font-extrabold text-[#64748B] uppercase tracking-wider">Strength Limit</th>
+                                            <th className="p-4 text-[11px] font-extrabold text-[#64748B] uppercase tracking-wider">Time Remaining</th>
+                                            <th className="p-4 text-[11px] font-extrabold text-[#64748B] uppercase tracking-wider">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody className="divide-y divide-[#E2E8F0]">
+                                        {CASTINGS.map((cast, index) => {
+                                            const statusConfig = getStatusConfig(cast.status);
+                                            const StatusIcon = statusConfig.icon;
+                                            const progress = Math.min(100, (cast.currentStrength / cast.targetStrength) * 100);
+                                            const timeRemaining = Math.max(0, cast.targetTime - cast.elapsedTime);
 
-                                            <div className="flex items-center gap-6">
-                                                {/* Progress bar */}
-                                                <div className="flex-1">
-                                                    <div className="flex items-center justify-between mb-1">
-                                                        <span className="text-[10px] text-[#A8A29E]">
-                                                            Strength: <span className="font-bold text-[#1C1917] font-mono-data">{c.currentStrength}</span> / {c.targetStrength} MPa
+                                            return (
+                                                <tr key={cast.id} className="hover:bg-[#F8FAFC] transition-colors group">
+                                                    <td className="p-4">
+                                                        <p className="text-[13px] font-bold text-[#0F172A] font-mono-data">{cast.id}</p>
+                                                        <p className="text-[11px] text-[#64748B] flex items-center gap-1 mt-1">
+                                                            <MapPin className="w-3 h-3" /> {cast.location}
+                                                        </p>
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <span className={`inline-flex items-center gap-1.5 px-2.5 py-1 bg-white border shadow-[2px_2px_0px_rgba(15,23,42,0.05)] rounded-md text-[10px] font-bold uppercase tracking-wide ${statusConfig.color} ${statusConfig.bg} ${statusConfig.border}`}>
+                                                            <StatusIcon className="w-3.5 h-3.5" />
+                                                            {statusConfig.label}
                                                         </span>
-                                                        <span className="text-[10px] font-bold text-[#0D9488] font-mono-data">{progress.toFixed(0)}%</span>
-                                                    </div>
-                                                    <div className="w-full h-2 bg-[#EDE9E0] rounded-full overflow-hidden">
-                                                        <div
-                                                            className="h-full rounded-full transition-all duration-500"
-                                                            style={{
-                                                                width: `${progress}%`,
-                                                                background: progress >= 100 ? "#059669" : "#0D9488",
-                                                            }}
-                                                        />
-                                                    </div>
-                                                </div>
-
-                                                {/* Time */}
-                                                <div className="text-right shrink-0">
-                                                    <div className="flex items-center gap-1 text-[10px] text-[#A8A29E]">
-                                                        <Clock className="w-3 h-3" />
-                                                        <span className="font-mono-data font-bold text-[#1C1917]">{c.elapsedTime}h</span> / {c.targetTime}h
-                                                    </div>
-                                                    <p className="text-[9px] text-[#A8A29E] mt-0.5">Strategy: {c.strategy}</p>
-                                                </div>
-
-                                                {/* Link */}
-                                                <Link href="/" className="shrink-0 w-8 h-8 rounded-lg border border-[#DDD8CE] flex items-center justify-center text-[#A8A29E] hover:text-[#0D9488] hover:border-[#0D9488] transition-all">
-                                                    <ArrowRight className="w-4 h-4" />
-                                                </Link>
-                                            </div>
-                                        </div>
-                                    );
-                                })}
+                                                    </td>
+                                                    <td className="p-4 w-48">
+                                                        <div className="flex justify-between text-[11px] font-bold text-[#64748B] mb-1.5 font-mono-data">
+                                                            <span>{progress.toFixed(0)}%</span>
+                                                        </div>
+                                                        <div className="w-full h-2 bg-[#E2E8F0] rounded-full overflow-hidden border border-[#CBD5E1]">
+                                                            <div className={`h-full ${statusConfig.bg.replace("bg-", "bg-").replace("50", "500").replace("emerald-50", "bg-[#10B981]").replace("amber-50", "bg-[#FFCB05]").replace("blue-50", "bg-[#3B82F6]")}`} style={{ width: `${progress}%` }} />
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <div className="flex items-center gap-1.5">
+                                                            <span className="text-[13px] font-extrabold text-[#0F172A] font-mono-data">{cast.currentStrength}</span>
+                                                            <span className="text-[11px] text-[#64748B]">/ {cast.targetStrength} MPa</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <div className="flex items-center gap-1.5 text-[#0F172A]">
+                                                            <Clock className="w-4 h-4 text-[#64748B]" />
+                                                            <span className="text-[13px] font-bold font-mono-data">{timeRemaining} hr</span>
+                                                        </div>
+                                                    </td>
+                                                    <td className="p-4">
+                                                        <Link href="/" className="p-2 text-[#94A3B8] hover:text-[#0F172A] hover:bg-white border hover:border-[#CBD5E1] rounded transition-all opacity-0 group-hover:opacity-100 shadow-[2px_2px_0px_#E2E8F0]">
+                                                            <ChevronRight className="w-4 h-4" />
+                                                        </Link>
+                                                    </td>
+                                                </tr>
+                                            );
+                                        })}
+                                    </tbody>
+                                </table>
                             </div>
                         </div>
                     </div>
-                </div>
+                </main>
             </div>
         </div>
     );

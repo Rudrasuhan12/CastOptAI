@@ -3,29 +3,29 @@ import pandas as pd
 from scipy.optimize import minimize
 import joblib
 
-# Load the trained model
+
 model = joblib.load('model.pkl')
 
-# --- Cost Constants (L&T Use Case) ---
+
 COSTS = {
     "cement_per_kg": 300 / 50,       # ₹300 per 50kg bag = ₹6/kg
     "chemicals_per_kg": 150,          # ₹150 per kg of admixture
     "steam_per_hour": 500,            # ₹500 per hour of steam curing
 }
 
-# --- ESG Constants ---
+
 CO2_PER_KG_CEMENT = 0.9              # kg CO₂ per kg cement
 CO2_PER_HOUR_STEAM = 40              # kg CO₂ per hour of steam (50 kWh → ~40 kg CO₂)
 ENERGY_PER_HOUR_STEAM = 50           # kWh per hour of steam
 
-# --- Default/fixed mix values (for features the optimizer doesn't control) ---
+
 DEFAULT_SLAG = 0
 DEFAULT_FLY_ASH = 0
 DEFAULT_WATER = 180
 DEFAULT_COARSE_AGG = 1000
 DEFAULT_FINE_AGG = 700
 
-# Feature column names matching the training data
+
 FEATURE_COLUMNS = [
     'cement', 'slag', 'fly_ash', 'water',
     'superplasticizer', 'coarse_agg', 'fine_agg',
@@ -70,20 +70,42 @@ def calculate_energy(steam_hours):
 
 def calculate_risk(predicted_strength, target_strength):
     """
-    Calculate risk level based on buffer between predicted and target.
-    Buffer < 5% → High, 5-15% → Medium, >15% → Low
+    Calculate risk level and confidence based on buffer between predicted and target.
+    Uses a logarithmic scale for more realistic confidence scores.
+    Buffer < 5% → High Risk, 5-15% → Medium Risk, >15% → Low Risk
     """
     if target_strength <= 0:
-        return "Low", 99.0
+        return "Low", 92.0
+    
     buffer_pct = ((predicted_strength - target_strength) / target_strength) * 100
-    confidence = min(99, max(50, 75 + buffer_pct * 2))
+    
 
-    if buffer_pct < 5:
-        return "High", round(confidence, 1)
+    import math
+    if buffer_pct <= 0:
+        confidence = max(40, 50 + buffer_pct)
+    elif buffer_pct < 5:
+        confidence = 55 + buffer_pct * 2  # 55-65 range
     elif buffer_pct < 15:
-        return "Medium", round(confidence, 1)
+        confidence = 65 + buffer_pct * 1.2  # 71-83 range
+    elif buffer_pct < 30:
+        confidence = 78 + math.log(buffer_pct) * 3  # ~86-88 range
+    elif buffer_pct < 60:
+        confidence = 85 + math.log(buffer_pct) * 1.5  # ~90-91 range
     else:
-        return "Low", round(confidence, 1)
+        confidence = 88 + math.log(buffer_pct) * 1.2  # ~93-94 range
+    
+
+    if predicted_strength > 50:
+        confidence -= (predicted_strength - 50) * 0.1
+    
+    confidence = round(min(96, max(45, confidence)), 1)
+    
+    if buffer_pct < 5:
+        return "High", confidence
+    elif buffer_pct < 15:
+        return "Medium", confidence
+    else:
+        return "Low", confidence
 
 
 def get_traditional_baseline(target_strength, target_time, temp, humidity):
@@ -105,7 +127,7 @@ def get_traditional_baseline(target_strength, target_time, temp, humidity):
         "energy": round(energy, 2),
     }
 
-#  OBJECTIVE FUNCTIONS FOR DIFFERENT STRATEGIES
+
 
 def objective_cheapest(x, target_time, temp, humidity):
     """Minimize total cost."""

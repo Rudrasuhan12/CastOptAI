@@ -13,7 +13,7 @@ from train_model import train_model
 
 app = FastAPI(title="CastOpt AI", version="2.0")
 
-# --- CORS for Next.js frontend ---
+
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -70,7 +70,7 @@ async def optimize_cycle(data: OptimizeRequest):
                 "message": "Could not find any optimal recipe. Target may be too aggressive for the given conditions."
             }
 
-        # Generate strength curves for each strategy
+
         for s in strategies:
             r = s["recommended_recipe"]
             s["strength_curve"] = get_strength_curve(
@@ -78,7 +78,7 @@ async def optimize_cycle(data: OptimizeRequest):
                 data.temp, data.humidity, max_hours=24
             )
 
-        # Also generate baseline curve
+
         baseline["strength_curve"] = get_strength_curve(
             baseline["cement"], baseline["chemicals"], baseline["steam_hours"],
             data.temp, data.humidity, max_hours=24
@@ -107,7 +107,7 @@ async def what_if_simulation(data: WhatIfRequest):
             data.cement, data.chemicals, data.steam_hours,
             data.time_hours, data.temp, data.humidity
         )
-        # Also generate a strength curve for this recipe
+
         curve = get_strength_curve(
             data.cement, data.chemicals, data.steam_hours,
             data.temp, data.humidity, max_hours=24
@@ -146,10 +146,10 @@ async def retrain_model_endpoint(data: RetrainRequest):
         df = pd.concat([df, pd.DataFrame([new_row])], ignore_index=True)
         df.to_csv(csv_path, index=False)
 
-        # Retrain model
+
         train_model()
 
-        # Reload model in optimizer module
+
         import optimizer
         optimizer.model = joblib.load('model.pkl')
 

@@ -1,23 +1,20 @@
 "use client";
 
-import React from "react";
+import React, { useState, useRef, useEffect, useCallback } from "react";
 import {
-    Cloud,
-    Droplets,
-    Thermometer,
-    Brain,
     MapPin,
+    Cloud,
+    Thermometer,
+    Droplets,
     Clock,
     Target,
-    Crosshair,
+    Zap,
+    AlertCircle,
     Loader2,
+    ChevronDown,
+    Search,
 } from "lucide-react";
 import type { WeatherData } from "@/types";
-
-const CITIES = [
-    "Delhi", "Mumbai", "Chennai", "Kolkata",
-    "Bangalore", "Hyderabad", "Pune", "Ahmedabad",
-];
 
 interface InputPanelProps {
     city: string;
@@ -33,157 +30,297 @@ interface InputPanelProps {
     onOptimize: () => void;
 }
 
-export default function InputPanel({
-    city,
-    targetTime,
-    targetStrength,
-    weather,
-    weatherLoading,
-    loading,
-    error,
-    onCityChange,
-    onTargetTimeChange,
-    onTargetStrengthChange,
-    onOptimize,
-}: InputPanelProps) {
-    return (
-        <div className="lg:col-span-3 no-print animate-slide-left">
-            <div className="card p-5 sticky top-4">
-                <h3 className="text-[13px] font-bold mb-5 flex items-center gap-2 text-[#1C1917]">
-                    <Crosshair className="w-4 h-4 text-[#0D9488]" />
-                    Project Parameters
-                </h3>
+interface GeoResult {
+    name: string;
+    state?: string;
+    country: string;
+    lat: number;
+    lon: number;
+}
 
-                {/* City */}
-                <div className="mb-4">
-                    <label className="label flex items-center gap-1.5 mb-2">
-                        <MapPin className="w-3 h-3" /> Project Location
-                    </label>
-                    <select
-                        className="input-field"
-                        value={city}
-                        onChange={(e) => onCityChange(e.target.value)}
-                    >
-                        <option value="">Select City...</option>
-                        {CITIES.map((c) => (
-                            <option key={c} value={c}>{c}</option>
-                        ))}
-                    </select>
+const POPULAR_CITIES = ["Delhi", "Mumbai", "Chennai", "Kolkata", "Bangalore", "Hyderabad", "Pune", "Ahmedabad"];
+
+export default function InputPanel({
+    city, targetTime, targetStrength, weather, weatherLoading, loading, error,
+    onCityChange, onTargetTimeChange, onTargetStrengthChange, onOptimize,
+}: InputPanelProps) {
+    const [query, setQuery] = useState(city);
+    const [results, setResults] = useState<GeoResult[]>([]);
+    const [isOpen, setIsOpen] = useState(false);
+    const [searching, setSearching] = useState(false);
+    const [showPopular, setShowPopular] = useState(false);
+    const containerRef = useRef<HTMLDivElement>(null);
+    const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+
+    useEffect(() => {
+        const handler = (e: MouseEvent) => {
+            if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+                setIsOpen(false);
+                setShowPopular(false);
+            }
+        };
+        document.addEventListener("mousedown", handler);
+        return () => document.removeEventListener("mousedown", handler);
+    }, []);
+
+
+    const searchPlaces = useCallback(async (q: string) => {
+        if (q.length < 2) {
+            setResults([]);
+            return;
+        }
+        setSearching(true);
+        try {
+            const apiKey = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY || "";
+            if (!apiKey) {
+
+                const filtered = POPULAR_CITIES.filter(c =>
+                    c.toLowerCase().includes(q.toLowerCase())
+                ).map(c => ({ name: c, country: "IN", lat: 0, lon: 0 }));
+                setResults(filtered);
+                setSearching(false);
+                return;
+            }
+            const res = await fetch(
+                `https://api.openweathermap.org/geo/1.0/direct?q=${encodeURIComponent(q)}&limit=6&appid=${apiKey}`
+            );
+            const data: GeoResult[] = await res.json();
+            setResults(data);
+        } catch {
+            setResults([]);
+        }
+        setSearching(false);
+    }, []);
+
+    const handleInputChange = (value: string) => {
+        setQuery(value);
+        setIsOpen(true);
+        setShowPopular(false);
+
+
+        if (debounceRef.current) clearTimeout(debounceRef.current);
+        debounceRef.current = setTimeout(() => searchPlaces(value), 350);
+    };
+
+    const handleSelect = (placeName: string) => {
+        setQuery(placeName);
+        onCityChange(placeName);
+        setIsOpen(false);
+        setShowPopular(false);
+        setResults([]);
+    };
+
+    const handleInputFocus = () => {
+        if (query.length >= 2) {
+            setIsOpen(true);
+        } else {
+            setShowPopular(true);
+        }
+    };
+
+    const toggleDropdown = () => {
+        if (isOpen || showPopular) {
+            setIsOpen(false);
+            setShowPopular(false);
+        } else {
+            setShowPopular(true);
+        }
+    };
+
+    return (
+        <div className="lg:col-span-3 space-y-5 animate-assembly delay-100">
+            <div className="card overflow-hidden">
+                <div className="px-5 py-4 border-b border-[#E2E8F0] bg-white flex justify-between items-center">
+                    <h3 className="text-[13px] font-extrabold text-[#0F172A] flex items-center gap-2">
+                        <Target className="w-4 h-4 text-[#FFCB05]" />
+                        Parameter Matrix
+                    </h3>
+                    <span className="text-[9px] font-bold text-[#64748B] px-1.5 py-0.5 rounded border border-[#E2E8F0] uppercase tracking-widest">Input</span>
                 </div>
 
-                {/* Weather */}
-                <div className="mb-4 rounded-lg border border-[#DDD8CE] bg-[#F5F2EC] overflow-hidden">
-                    <div className="px-3.5 py-3">
-                        <p className="label flex items-center gap-1.5 mb-2.5">
-                            <Cloud className="w-3 h-3" /> Live Weather
-                        </p>
-                        {weather.temp !== null ? (
-                            <div className="flex items-center justify-between">
-                                <div>
-                                    <div className="flex items-center gap-2 mb-1">
-                                        <Thermometer className="w-4 h-4 text-[#D97706]" />
-                                        <span className="text-xl font-extrabold text-[#1C1917] font-mono-data">{weather.temp}°C</span>
+                <div className="p-5 space-y-6">
+
+                    <div ref={containerRef} className="relative">
+                        <label className="label flex items-center gap-1.5">
+                            <MapPin className="w-3.5 h-3.5 text-[#64748B]" />
+                            Project Location
+                        </label>
+                        <div className="relative">
+                            <input
+                                type="text"
+                                value={query}
+                                onChange={(e) => handleInputChange(e.target.value)}
+                                onFocus={handleInputFocus}
+                                placeholder="Search any city..."
+                                className="input-field w-full pr-10 text-[13px]"
+                                autoComplete="off"
+                            />
+                            <button
+                                type="button"
+                                onClick={toggleDropdown}
+                                className="absolute right-2 top-1/2 -translate-y-1/2 w-6 h-6 flex items-center justify-center rounded hover:bg-[#F1F5F9] transition-colors"
+                            >
+                                <ChevronDown className={`w-4 h-4 text-[#64748B] transition-transform duration-200 ${(isOpen || showPopular) ? "rotate-180" : ""}`} />
+                            </button>
+                        </div>
+
+
+                        {(isOpen && (results.length > 0 || searching)) && (
+                            <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-[#E2E8F0] rounded-lg shadow-[3px_3px_0px_#E2E8F0] z-50 max-h-[240px] overflow-y-auto animate-scale-in">
+                                {searching ? (
+                                    <div className="flex items-center justify-center gap-2 px-4 py-3 text-[12px] text-[#64748B]">
+                                        <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                                        Searching...
                                     </div>
-                                    <div className="flex items-center gap-1.5 mt-1">
-                                        <Droplets className="w-3 h-3 text-[#0D9488]" />
-                                        <span className="text-[11px] font-medium text-[#78716C] font-mono-data">{weather.humidity}%</span>
-                                    </div>
-                                    <p className="text-[10px] text-[#A8A29E] mt-1 capitalize">{weather.desc}</p>
-                                </div>
-                                <Cloud className="w-10 h-10 text-[#DDD8CE]" />
+                                ) : (
+                                    results.map((r, i) => (
+                                        <button
+                                            key={`${r.name}-${r.country}-${i}`}
+                                            onClick={() => handleSelect(r.name)}
+                                            className="w-full text-left px-4 py-2.5 text-[13px] font-medium text-[#0F172A] hover:bg-[#F8FAFC] flex items-center gap-2.5 border-b border-[#F1F5F9] last:border-0 transition-colors"
+                                        >
+                                            <MapPin className="w-3.5 h-3.5 text-[#94A3B8] shrink-0" />
+                                            <span className="truncate">
+                                                {r.name}
+                                                {r.state && <span className="text-[#94A3B8]">, {r.state}</span>}
+                                                <span className="text-[#94A3B8]"> — {r.country}</span>
+                                            </span>
+                                        </button>
+                                    ))
+                                )}
                             </div>
-                        ) : (
-                            <p className="text-[11px] text-[#A8A29E]">
-                                {weatherLoading ? (
-                                    <span className="flex items-center gap-1.5">
-                                        <Loader2 className="w-3 h-3 animate-spin" /> Fetching...
-                                    </span>
-                                ) : "Select a city above"}
-                            </p>
+                        )}
+
+
+                        {showPopular && !isOpen && (
+                            <div className="absolute left-0 right-0 top-full mt-1 bg-white border border-[#E2E8F0] rounded-lg shadow-[3px_3px_0px_#E2E8F0] z-50 max-h-[260px] overflow-y-auto animate-scale-in">
+                                <div className="px-4 py-2 border-b border-[#E2E8F0]">
+                                    <p className="text-[9px] font-bold text-[#94A3B8] uppercase tracking-widest flex items-center gap-1.5">
+                                        <Search className="w-3 h-3" />
+                                        Popular Locations
+                                    </p>
+                                </div>
+                                {POPULAR_CITIES.map((c) => (
+                                    <button
+                                        key={c}
+                                        onClick={() => handleSelect(c)}
+                                        className="w-full text-left px-4 py-2.5 text-[13px] font-medium text-[#0F172A] hover:bg-[#F8FAFC] flex items-center gap-2.5 border-b border-[#F1F5F9] last:border-0 transition-colors"
+                                    >
+                                        <MapPin className="w-3.5 h-3.5 text-[#94A3B8] shrink-0" />
+                                        {c}
+                                    </button>
+                                ))}
+                            </div>
                         )}
                     </div>
-                </div>
 
-                {/* Cycle Time */}
-                <div className="mb-4">
-                    <label className="flex items-center justify-between mb-2">
-                        <span className="label flex items-center gap-1.5">
-                            <Clock className="w-3 h-3" /> Target Cycle Time
-                        </span>
-                        <span className="text-[12px] font-bold text-[#0D9488] bg-[#CCFBF1] px-2 py-0.5 rounded font-mono-data">
-                            {targetTime}h
-                        </span>
-                    </label>
-                    <input
-                        type="range"
-                        min="4"
-                        max="72"
-                        value={targetTime}
-                        onChange={(e) => onTargetTimeChange(parseInt(e.target.value))}
-                        className="w-full"
-                    />
-                    <div className="flex justify-between text-[9px] text-[#A8A29E] mt-1 font-mono-data">
-                        <span>4h</span>
-                        <span>72h</span>
+
+                    <div className="card-flat p-4 group hover:border-[#94A3B8]">
+                        <label className="label flex items-center justify-between">
+                            <span className="flex items-center gap-1.5">
+                                <Cloud className="w-3.5 h-3.5 text-[#94A3B8] group-hover:text-[#0F172A] transition-colors" />
+                                Live Telemetry
+                            </span>
+                            {weatherLoading && <Loader2 className="w-3 h-3 animate-spin text-[#0F172A]" />}
+                        </label>
+                        <div className="mt-3 flex items-center justify-between">
+                            <div className="flex items-center gap-3">
+                                <div className="flex items-center gap-1.5">
+                                    <Thermometer className="w-3.5 h-3.5 text-[#EF4444]" />
+                                    <span className="text-lg font-extrabold text-[#0F172A] font-mono-data">
+                                        {weather.temp !== null ? `${weather.temp}°` : "--"}
+                                    </span>
+                                </div>
+                                <div className="h-6 w-px bg-[#CBD5E1]" />
+                                <div className="flex items-center gap-1.5">
+                                    <Droplets className="w-3.5 h-3.5 text-[#3B82F6]" />
+                                    <span className="text-[13px] font-bold text-[#64748B] font-mono-data">
+                                        {weather.humidity !== null ? `${weather.humidity}%` : "--"}
+                                    </span>
+                                </div>
+                            </div>
+                            <span className="text-[10px] font-bold text-[#64748B] capitalize text-right max-w-[80px] leading-tight">
+                                {weather.desc}
+                            </span>
+                        </div>
+                    </div>
+
+                    <hr className="border-[#E2E8F0]" />
+
+
+                    <div>
+                        <div className="flex justify-between items-center mb-3">
+                            <label className="label flex items-center gap-1.5 mb-0">
+                                <Clock className="w-3.5 h-3.5 text-[#64748B]" />
+                                Target Cycle Time
+                            </label>
+                            <span className="text-[11px] font-extrabold text-[#0F172A] bg-[#F1F5F9] px-2 py-0.5 rounded border border-[#E2E8F0] font-mono-data">
+                                {targetTime}h
+                            </span>
+                        </div>
+                        <input
+                            type="range" min="4" max="72" step="1"
+                            value={targetTime}
+                            onChange={(e) => onTargetTimeChange(Number(e.target.value))}
+                            className="w-full"
+                        />
+                        <div className="flex justify-between text-[10px] text-[#94A3B8] font-bold font-mono-data mt-2">
+                            <span>4h</span>
+                            <span>72h</span>
+                        </div>
+                    </div>
+
+
+                    <div>
+                        <div className="flex justify-between items-center mb-3">
+                            <label className="label flex items-center gap-1.5 mb-0">
+                                <Target className="w-3.5 h-3.5 text-[#64748B]" />
+                                Demolding Strength
+                            </label>
+                            <span className="text-[11px] font-extrabold text-[#0F172A] bg-[#F1F5F9] px-2 py-0.5 rounded border border-[#E2E8F0] font-mono-data">
+                                {targetStrength} MPa
+                            </span>
+                        </div>
+                        <input
+                            type="range" min="10" max="60" step="1"
+                            value={targetStrength}
+                            onChange={(e) => onTargetStrengthChange(Number(e.target.value))}
+                            className="w-full"
+                        />
+                        <div className="flex justify-between text-[10px] text-[#94A3B8] font-bold font-mono-data mt-2">
+                            <span>10 MPa</span>
+                            <span>60 MPa</span>
+                        </div>
                     </div>
                 </div>
 
-                {/* Strength */}
-                <div className="mb-5">
-                    <label className="flex items-center justify-between mb-2">
-                        <span className="label flex items-center gap-1.5">
-                            <Target className="w-3 h-3" /> Target Strength
-                        </span>
-                        <span className="text-[12px] font-bold text-[#0D9488] bg-[#CCFBF1] px-2 py-0.5 rounded font-mono-data">
-                            {targetStrength} MPa
-                        </span>
-                    </label>
-                    <input
-                        type="range"
-                        min="10"
-                        max="60"
-                        value={targetStrength}
-                        onChange={(e) => onTargetStrengthChange(parseInt(e.target.value))}
-                        className="w-full"
-                    />
-                    <div className="flex justify-between text-[9px] text-[#A8A29E] mt-1 font-mono-data">
-                        <span>10 MPa</span>
-                        <span>60 MPa</span>
-                    </div>
-                </div>
 
-                {/* Error */}
-                {error && (
-                    <div className="mb-3 p-3 bg-red-50 border border-red-200 rounded-lg text-[12px] text-red-600 font-medium animate-scale-in">
-                        {error}
-                    </div>
-                )}
-
-                {/* Optimize */}
-                <button
-                    onClick={onOptimize}
-                    disabled={loading}
-                    className="btn-primary w-full"
-                >
-                    {loading ? (
-                        <>
-                            <Loader2 className="w-4 h-4 animate-spin" />
-                            Simulating Recipes...
-                        </>
-                    ) : (
-                        <>
-                            <Brain className="w-4 h-4" />
-                            Optimize Strategy
-                        </>
-                    )}
-                </button>
-
-                {/* Status */}
-                <div className="flex items-center justify-center gap-2 mt-3 text-[10px] text-[#A8A29E]">
-                    <span className="status-dot status-dot-green" />
-                    AI Engine Active
+                <div className="p-5 bg-[#F8FAFC] border-t border-[#E2E8F0]">
+                    <button
+                        onClick={onOptimize}
+                        disabled={loading}
+                        className="btn-primary w-full h-12 text-[14px]"
+                    >
+                        {loading ? (
+                            <><Loader2 className="w-5 h-5 animate-spin" /> Compiling AI Model...</>
+                        ) : (
+                            <><Zap className="w-5 h-5" /> Execute Optimization</>
+                        )}
+                    </button>
+                    <p className="text-center text-[9px] text-[#64748B] font-bold tracking-widest uppercase mt-3 flex items-center justify-center gap-1">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#10B981] animate-pulse" />
+                        Engine Ready
+                    </p>
                 </div>
             </div>
+
+            {error && (
+                <div className="bg-[#FEF2F2] border border-[#FECACA] text-[#EF4444] p-4 rounded-xl text-[12px] font-bold flex items-start gap-2 animate-scale-in shadow-[3px_3px_0px_#FECACA]">
+                    <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                    <p>{error}</p>
+                </div>
+            )}
         </div>
     );
 }

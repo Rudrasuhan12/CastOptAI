@@ -2,15 +2,18 @@
 
 import React from "react";
 import {
-    FlaskConical,
     Leaf,
     Zap,
-    TrendingDown,
-    Factory,
-    Droplets,
-    BarChart3,
-    Calendar,
+    PiggyBank,
+    ShieldCheck,
+    Filter,
+    Download,
 } from "lucide-react";
+import {
+    AreaChart, Area, BarChart, Bar,
+    XAxis, YAxis, CartesianGrid, Tooltip,
+    ResponsiveContainer, Legend
+} from "recharts";
 import Sidebar from "@/components/Sidebar";
 import Header from "@/components/Header";
 
@@ -30,145 +33,101 @@ const ESG_SCORES = [
     { label: "Waste Diversion", value: "91", unit: "%", target: "> 85%", status: "good" },
 ];
 
-export default function ESGReportsPage() {
-    const latest = MONTHLY_DATA[MONTHLY_DATA.length - 1];
-    const previous = MONTHLY_DATA[MONTHLY_DATA.length - 2];
-
-    const co2Change = ((latest.co2 - previous.co2) / previous.co2 * 100).toFixed(1);
-    const energyChange = ((latest.energy - previous.energy) / previous.energy * 100).toFixed(1);
-    const costChange = ((latest.cost - previous.cost) / previous.cost * 100).toFixed(1);
-
+export default function ESGReports() {
     return (
-        <div className="flex h-screen font-[family-name:var(--font-inter)] text-[#1C1917]">
+        <div className="flex h-screen w-full bg-transparent overflow-hidden">
             <Sidebar />
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col h-full bg-transparent">
                 <Header showExport={true} onExport={() => window.print()} />
-                <div className="flex-1 overflow-y-auto bg-[#F5F2EC]">
-                    <div className="p-6 max-w-[1400px] mx-auto">
-                        {/* Page header */}
-                        <div className="flex items-center justify-between mb-6">
+                <main className="flex-1 overflow-auto p-4 md:p-8">
+                    <div className="max-w-[1400px] mx-auto w-full">
+                        <div className="flex items-center justify-between mb-8 animate-assembly">
                             <div>
-                                <h2 className="text-xl font-bold text-[#1C1917] flex items-center gap-2">
-                                    <FlaskConical className="w-5 h-5 text-[#059669]" />
-                                    ESG Reports
-                                </h2>
-                                <p className="text-[13px] text-[#78716C] mt-1">
-                                    Environmental, Social & Governance performance metrics
-                                </p>
+                                <h1 className="text-3xl font-extrabold text-[#0F172A] tracking-tight">Environmental & Economic Impact</h1>
+                                <p className="text-[13px] text-[#64748B] font-medium mt-1">Live corporate ESG tracking across all optimization jobs.</p>
                             </div>
-                            <div className="flex items-center gap-2 text-[11px] text-[#78716C]">
-                                <Calendar className="w-3.5 h-3.5" />
-                                Report Period: Jul — Dec 2024
+                            <div className="flex items-center gap-3">
+                                <button className="flex items-center gap-2 px-4 py-2 bg-white border border-[#CBD5E1] text-[#0F172A] rounded-md text-[12px] font-bold shadow-[2px_2px_0px_#E2E8F0] hover:shadow-[3px_3px_0px_#CBD5E1] hover:-translate-y-px transition-all">
+                                    <Filter className="w-4 h-4" /> YTD 2024
+                                </button>
+                                <button className="btn-primary">
+                                    <Download className="w-4 h-4" /> Download PDF
+                                </button>
                             </div>
                         </div>
 
-                        {/* Top KPI cards */}
-                        <div className="grid grid-cols-4 gap-4 mb-6">
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
                             {[
-                                {
-                                    icon: Leaf, label: "Total CO₂ Saved",
-                                    value: "3,800", unit: "kg",
-                                    change: co2Change, changeLabel: "vs last month",
-                                    iconBg: "#ECFDF5", iconColor: "#059669", borderColor: "#059669",
-                                },
-                                {
-                                    icon: Zap, label: "Energy Reduced",
-                                    value: "2,500", unit: "kWh",
-                                    change: energyChange, changeLabel: "vs last month",
-                                    iconBg: "#FEF3C7", iconColor: "#D97706", borderColor: "#D97706",
-                                },
-                                {
-                                    icon: TrendingDown, label: "Cost Savings",
-                                    value: "₹45,000", unit: "",
-                                    change: costChange, changeLabel: "vs last month",
-                                    iconBg: "#CCFBF1", iconColor: "#0D9488", borderColor: "#0D9488",
-                                },
-                                {
-                                    icon: Factory, label: "Jobs Optimized",
-                                    value: latest.jobs.toString(), unit: "this month",
-                                    change: `+${latest.jobs - previous.jobs}`, changeLabel: "more than last",
-                                    iconBg: "#EDE9FE", iconColor: "#7C3AED", borderColor: "#7C3AED",
-                                },
-                            ].map((kpi) => {
-                                const Icon = kpi.icon;
-                                return (
-                                    <div key={kpi.label} className="card p-4 animate-slide-up" style={{ borderLeftWidth: "3px", borderLeftColor: kpi.borderColor }}>
-                                        <div className="flex items-start gap-3">
-                                            <div className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0" style={{ background: kpi.iconBg }}>
-                                                <Icon className="w-4 h-4" style={{ color: kpi.iconColor }} />
-                                            </div>
-                                            <div>
-                                                <p className="label mb-1">{kpi.label}</p>
-                                                <p className="text-xl font-extrabold font-mono-data" style={{ color: kpi.borderColor }}>
-                                                    {kpi.value} {kpi.unit && <span className="text-[10px] font-normal text-[#A8A29E]">{kpi.unit}</span>}
-                                                </p>
-                                                <p className="text-[10px] text-[#059669] font-semibold mt-0.5">
-                                                    {kpi.change}% {kpi.changeLabel}
-                                                </p>
-                                            </div>
+                                { label: "Total CO₂ Saved", value: "84.2", unit: "Tons", trend: "-12% vs LY", icon: Leaf, color: "text-[#10B981]", bg: "bg-[#F0FDF4]", border: "border-[#10B981]" },
+                                { label: "Energy Reduced", value: "320", unit: "MWh", trend: "-8% vs LY", icon: Zap, color: "text-[#D97706]", bg: "bg-[#FEFCE8]", border: "border-[#FDE047]" },
+                                { label: "Material Cost Saved", value: "₹2.4", unit: "Cr", trend: "+15% vs LY", icon: PiggyBank, color: "text-[#0F172A]", bg: "bg-[#F1F5F9]", border: "border-[#94A3B8]" },
+                                { label: "Target Compliance", value: "98.5", unit: "%", trend: "On Track", icon: ShieldCheck, color: "text-[#2563EB]", bg: "bg-[#EFF6FF]", border: "border-[#93C5FD]" },
+                            ].map((stat, i) => (
+                                <div key={i} className={`card p-5 animate-assembly delay-${(i + 1) * 100} shadow-[3px_3px_0px_#E2E8F0]`}>
+                                    <div className="flex justify-between items-start mb-4">
+                                        <div className={`p-2 rounded-lg ${stat.bg} ${stat.color}`}>
+                                            <stat.icon className="w-5 h-5" />
                                         </div>
+                                        <span className={`text-[10px] font-bold px-2 py-0.5 rounded-full border ${stat.border} ${stat.color} bg-white bg-opacity-50 uppercase tracking-widest`}>
+                                            {stat.trend}
+                                        </span>
                                     </div>
-                                );
-                            })}
+                                    <p className="text-[12px] font-bold text-[#64748B] uppercase tracking-widest">{stat.label}</p>
+                                    <p className="text-3xl font-extrabold text-[#0F172A] font-mono-data tracking-tight mt-1">
+                                        {stat.value}
+                                        <span className="text-[14px] font-medium text-[#64748B] ml-1">{stat.unit}</span>
+                                    </p>
+                                </div>
+                            ))}
                         </div>
 
-                        <div className="grid grid-cols-2 gap-6 mb-6">
-                            {/* Monthly trend table */}
-                            <div className="card overflow-hidden">
-                                <div className="px-5 py-3 border-b border-[#DDD8CE] bg-[#F5F2EC] flex items-center gap-2">
-                                    <BarChart3 className="w-4 h-4 text-[#0D9488]" />
-                                    <p className="text-[12px] font-bold text-[#1C1917]">Monthly Trends</p>
+                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+                            <div className="card animate-assembly delay-500 overflow-hidden">
+                                <div className="px-5 py-4 border-b border-[#E2E8F0] bg-[#F8FAFC]">
+                                    <h3 className="text-[12px] font-extrabold text-[#0F172A] uppercase tracking-widest">CO₂ Emissions Trend (Kg)</h3>
                                 </div>
-                                <table className="w-full text-[12px]">
-                                    <thead>
-                                        <tr className="border-b border-[#EDE9E0]">
-                                            <th className="px-5 py-2.5 text-left label">Month</th>
-                                            <th className="px-5 py-2.5 text-right label">CO₂ (kg)</th>
-                                            <th className="px-5 py-2.5 text-right label">Energy (kWh)</th>
-                                            <th className="px-5 py-2.5 text-right label">Cost (₹)</th>
-                                            <th className="px-5 py-2.5 text-right label">Jobs</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                                        {MONTHLY_DATA.map((row) => (
-                                            <tr key={row.month} className="border-b border-[#EDE9E0] last:border-0 hover:bg-[#F5F2EC]/50">
-                                                <td className="px-5 py-2.5 font-semibold text-[#1C1917]">{row.month}</td>
-                                                <td className="px-5 py-2.5 text-right font-mono-data text-[#78716C]">{row.co2.toLocaleString()}</td>
-                                                <td className="px-5 py-2.5 text-right font-mono-data text-[#78716C]">{row.energy.toLocaleString()}</td>
-                                                <td className="px-5 py-2.5 text-right font-mono-data text-[#78716C]">₹{row.cost.toLocaleString()}</td>
-                                                <td className="px-5 py-2.5 text-right font-mono-data font-bold text-[#0D9488]">{row.jobs}</td>
-                                            </tr>
-                                        ))}
-                                    </tbody>
-                                </table>
+                                <div className="p-6 h-[280px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <AreaChart data={MONTHLY_DATA}>
+                                            <defs>
+                                                <linearGradient id="colorCo2" x1="0" y1="0" x2="0" y2="1">
+                                                    <stop offset="5%" stopColor="#10B981" stopOpacity={0.2} />
+                                                    <stop offset="95%" stopColor="#10B981" stopOpacity={0} />
+                                                </linearGradient>
+                                            </defs>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                                            <XAxis dataKey="month" tick={{ fontSize: 11, fontWeight: 700, fill: "#64748B", fontFamily: "var(--font-mono)" }} stroke="#CBD5E1" />
+                                            <YAxis tick={{ fontSize: 11, fontWeight: 700, fill: "#64748B", fontFamily: "var(--font-mono)" }} stroke="#CBD5E1" />
+                                            <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid #0F172A", boxShadow: "4px 4px 0px rgba(15,23,42,1)", fontSize: 12, fontWeight: 800, fontFamily: "var(--font-mono)" }} />
+                                            <Area type="monotone" dataKey="co2" stroke="#10B981" strokeWidth={3} fillOpacity={1} fill="url(#colorCo2)" />
+                                        </AreaChart>
+                                    </ResponsiveContainer>
+                                </div>
                             </div>
-
-                            {/* ESG Scorecard */}
-                            <div className="card overflow-hidden">
-                                <div className="px-5 py-3 border-b border-[#DDD8CE] bg-[#F5F2EC] flex items-center gap-2">
-                                    <Droplets className="w-4 h-4 text-[#059669]" />
-                                    <p className="text-[12px] font-bold text-[#1C1917]">ESG Scorecard</p>
+                            <div className="card animate-assembly delay-600 overflow-hidden">
+                                <div className="px-5 py-4 border-b border-[#E2E8F0] bg-[#F8FAFC]">
+                                    <h3 className="text-[12px] font-extrabold text-[#0F172A] uppercase tracking-widest">Energy Usage vs Cost Savings</h3>
                                 </div>
-                                <div className="divide-y divide-[#EDE9E0]">
-                                    {ESG_SCORES.map((score) => (
-                                        <div key={score.label} className="px-5 py-4 flex items-center justify-between">
-                                            <div>
-                                                <p className="text-[13px] font-semibold text-[#1C1917]">{score.label}</p>
-                                                <p className="text-[10px] text-[#A8A29E] mt-0.5">Target: {score.target}</p>
-                                            </div>
-                                            <div className="text-right flex items-center gap-3">
-                                                <span className="text-lg font-extrabold font-mono-data text-[#1C1917]">
-                                                    {score.value}<span className="text-[10px] font-normal text-[#A8A29E] ml-0.5">{score.unit}</span>
-                                                </span>
-                                                <span className={`w-2.5 h-2.5 rounded-full ${score.status === "good" ? "bg-[#059669]" : "bg-[#D97706]"}`} />
-                                            </div>
-                                        </div>
-                                    ))}
+                                <div className="p-6 h-[280px]">
+                                    <ResponsiveContainer width="100%" height="100%">
+                                        <BarChart data={MONTHLY_DATA}>
+                                            <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />
+                                            <XAxis dataKey="month" tick={{ fontSize: 11, fontWeight: 700, fill: "#64748B", fontFamily: "var(--font-mono)" }} stroke="#CBD5E1" />
+                                            <YAxis yAxisId="left" tick={{ fontSize: 11, fontWeight: 700, fill: "#64748B", fontFamily: "var(--font-mono)" }} stroke="#CBD5E1" />
+                                            <YAxis yAxisId="right" orientation="right" tick={{ fontSize: 11, fontWeight: 700, fill: "#64748B", fontFamily: "var(--font-mono)" }} stroke="#CBD5E1" />
+                                            <Tooltip contentStyle={{ borderRadius: "8px", border: "1px solid #0F172A", boxShadow: "4px 4px 0px rgba(15,23,42,1)", fontSize: 12, fontWeight: 800, fontFamily: "var(--font-mono)" }} cursor={{ fill: "#F1F5F9" }} />
+                                            <Legend wrapperStyle={{ fontSize: 11, fontWeight: 800, fontFamily: "var(--font-sans)", color: "#64748B" }} />
+                                            <Bar yAxisId="left" dataKey="energy" fill="#0F172A" name="Energy (kWh)" radius={[4, 4, 0, 0]} />
+                                            <Bar yAxisId="right" dataKey="cost" fill="#FFCB05" name="Cost (₹)" radius={[4, 4, 0, 0]} />
+                                        </BarChart>
+                                    </ResponsiveContainer>
                                 </div>
                             </div>
                         </div>
+
                     </div>
-                </div>
+                </main>
             </div>
         </div>
     );

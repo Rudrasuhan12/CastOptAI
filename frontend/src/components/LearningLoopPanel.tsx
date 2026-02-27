@@ -2,7 +2,7 @@
 
 import React, { useState } from "react";
 import axios from "axios";
-import { RefreshCw, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { GitBranch, CheckCircle, AlertCircle, Loader2, Save } from "lucide-react";
 
 const AI_SERVICE_URL = process.env.NEXT_PUBLIC_AI_SERVICE_URL || "http://localhost:8000";
 
@@ -44,79 +44,91 @@ export default function LearningLoopPanel({ lastRecipe, lastConditions }: Learni
     };
 
     return (
-        <div className="card overflow-hidden">
-            {/* Header */}
-            <div className="px-5 py-4 border-b border-[#DDD8CE] bg-[#CCFBF1]/30">
-                <h3 className="text-[13px] font-bold flex items-center gap-2 text-[#1C1917]">
-                    <div className="w-7 h-7 rounded-md bg-[#CCFBF1] flex items-center justify-center">
-                        <RefreshCw className="w-3.5 h-3.5 text-[#0D9488]" />
+        <div className="card overflow-hidden border-2 border-[#0F172A]">
+
+            <div className="px-5 py-4 bg-[#0F172A] flex justify-between items-center text-white">
+                <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-md bg-[#1E293B] flex items-center justify-center border border-[#334155]">
+                        <GitBranch className="w-4 h-4 text-[#10B981]" />
                     </div>
-                    Continuous Learning Loop
-                </h3>
-                <p className="text-[10px] text-[#A8A29E] mt-1 ml-9">
-                    Log actual tested strength to retrain the AI model
-                </p>
+                    <div>
+                        <h3 className="text-[13px] font-extrabold tracking-wide uppercase">Continuous Learning Node</h3>
+                        <p className="text-[9px] text-[#94A3B8] font-mono-data tracking-widest mt-0.5">FEEDBACK_LOOP_SYSTEM</p>
+                    </div>
+                </div>
             </div>
 
-            <div className="p-5">
+            <div className="p-6">
                 {!lastRecipe ? (
-                    <div className="text-center py-10 text-[#A8A29E] text-[13px]">
-                        <RefreshCw className="w-7 h-7 mx-auto mb-3 text-[#DDD8CE]" />
-                        Run an optimization first, then log results here.
+                    <div className="text-center py-12 text-[#94A3B8] text-[13px]">
+                        <div className="w-12 h-12 rounded-full border border-dashed border-[#CBD5E1] mx-auto flex items-center justify-center mb-4">
+                            <GitBranch className="w-5 h-5 text-[#94A3B8]" />
+                        </div>
+                        <p className="font-medium">Execute an optimization sequence to calibrate the feedback node.</p>
                     </div>
                 ) : (
                     <>
-                        {/* Recipe summary */}
-                        <div className="rounded-lg border border-[#DDD8CE] bg-[#F5F2EC] p-4 mb-4">
-                            <p className="label mb-2">Recipe Used</p>
+                        <p className="text-[12px] text-[#475569] mb-5 font-medium leading-relaxed">
+                            Log actual laboratory test results for the recent cast to <strong className="text-[#0F172A]">retrain and continuously improve</strong> the Random Forest predictive model.
+                        </p>
+
+
+                        <div className="bg-[#F8FAFC] border border-[#E2E8F0] p-4 rounded-xl shadow-[3px_3px_0px_#E2E8F0] mb-6">
+                            <p className="text-[10px] uppercase font-bold text-[#64748B] tracking-wider mb-3">Snapshot Payload</p>
                             <div className="grid grid-cols-4 gap-3 text-center">
                                 {[
                                     { label: "Cement", value: `${lastRecipe.cement} kg` },
                                     { label: "Water", value: `${lastRecipe.water} L` },
-                                    { label: "Chemicals", value: `${lastRecipe.chemicals} kg` },
+                                    { label: "Chem.", value: `${lastRecipe.chemicals} kg` },
                                     { label: "Steam", value: `${lastRecipe.steam_hours} hrs` },
                                 ].map((item) => (
-                                    <div key={item.label}>
-                                        <p className="text-[9px] text-[#A8A29E] font-semibold uppercase">{item.label}</p>
-                                        <p className="text-[13px] font-bold text-[#1C1917] font-mono-data">{item.value}</p>
+                                    <div key={item.label} className="bg-white border border-[#E2E8F0] rounded py-2">
+                                        <p className="text-[9px] text-[#94A3B8] font-bold uppercase tracking-wider">{item.label}</p>
+                                        <p className="text-[13px] font-bold text-[#0F172A] font-mono-data mt-0.5">{item.value}</p>
                                     </div>
                                 ))}
                             </div>
                         </div>
 
-                        {/* Input */}
-                        <div className="mb-4">
-                            <label className="block text-[12px] font-bold text-[#1C1917] mb-2">
-                                Actual Tested Strength (MPa)
+
+                        <div className="mb-6 bg-white border border-[#E2E8F0] rounded-xl p-5 shadow-[4px_4px_0px_#0F172A]">
+                            <label className="block text-[11px] font-extrabold text-[#0F172A] uppercase tracking-widest mb-3">
+                                Actual Laboratory Strength (MPa)
                             </label>
-                            <input
-                                type="number" step="0.1" placeholder="e.g. 22.5"
-                                value={actualStrength}
-                                onChange={(e) => setActualStrength(e.target.value)}
-                                className="input-field text-base font-bold font-mono-data"
-                            />
+                            <div className="flex gap-4">
+                                <input
+                                    type="number" step="0.1" placeholder="e.g. 25.4"
+                                    value={actualStrength}
+                                    onChange={(e) => setActualStrength(e.target.value)}
+                                    className="input-field text-lg font-bold font-mono-data py-3 shadow-[2px_2px_0px_#CBD5E1]"
+                                />
+                                <button onClick={handleSubmit} disabled={loading || !actualStrength}
+                                    className="btn-primary shrink-0"
+                                >
+                                    {loading ? (
+                                        <><Loader2 className="w-4 h-4 animate-spin" /> COMMITTING...</>
+                                    ) : (
+                                        <><Save className="w-4 h-4" /> COMMIT DATA</>
+                                    )}
+                                </button>
+                            </div>
                         </div>
 
-                        <button onClick={handleSubmit} disabled={loading || !actualStrength}
-                            className="btn-primary w-full"
-                        >
-                            {loading ? (
-                                <><Loader2 className="w-4 h-4 animate-spin" /> Retraining Model...</>
-                            ) : (
-                                <><RefreshCw className="w-4 h-4" /> Submit & Retrain</>
-                            )}
-                        </button>
-
                         {feedback && (
-                            <div className={`mt-3 p-3 rounded-lg flex items-start gap-2 animate-scale-in text-[12px] font-medium ${feedback.type === "success"
-                                    ? "bg-[#ECFDF5] border border-[#059669]/20 text-[#059669]"
-                                    : "bg-red-50 border border-red-200 text-[#DC2626]"
+                            <div className={`p-4 rounded-xl flex items-start gap-3 animate-scale-in text-[13px] font-bold border-2 ${feedback.type === "success"
+                                ? "bg-[#F0FDF4] border-[#16A34A] text-[#16A34A] shadow-[4px_4px_0px_#16A34A]"
+                                : "bg-[#FEF2F2] border-[#DC2626] text-[#DC2626] shadow-[4px_4px_0px_#DC2626]"
                                 }`}>
                                 {feedback.type === "success"
-                                    ? <CheckCircle className="w-4 h-4 mt-0.5 shrink-0" />
-                                    : <AlertCircle className="w-4 h-4 mt-0.5 shrink-0" />
+                                    ? <CheckCircle className="w-5 h-5 shrink-0" />
+                                    : <AlertCircle className="w-5 h-5 shrink-0" />
                                 }
-                                {feedback.message}
+                                <div>
+                                    <p className="uppercase tracking-widest text-[10px] mb-0.5 text-current/80">
+                                        {feedback.type === "success" ? "MODEL SYNC SUCCESSFUL" : "SYNC FAILED"}
+                                    </p>
+                                    {feedback.message}
+                                </div>
                             </div>
                         )}
                     </>

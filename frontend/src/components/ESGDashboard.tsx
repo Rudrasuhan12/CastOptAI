@@ -1,86 +1,82 @@
 "use client";
 
 import React from "react";
-import { Leaf, Zap, TrendingDown } from "lucide-react";
+import { Leaf, Zap, DollarSign, TrendingDown } from "lucide-react";
 
 interface ESGDashboardProps {
-    carbonReduction: number;
-    energySavings: number;
-    costSavings: number;
-    co2Kg: number;
+    co2: number;
+    energy: number;
+    cost: number;
 }
 
-export default function ESGDashboard({
-    carbonReduction,
-    energySavings,
-    costSavings,
-    co2Kg,
-}: ESGDashboardProps) {
+export default function ESGDashboard({ co2, energy, cost }: ESGDashboardProps) {
     const metrics = [
         {
+            title: "CO₂ Emissions",
+            value: co2.toFixed(1),
+            unit: "kg",
             icon: Leaf,
-            label: "CO₂ Reduced",
-            value: `${carbonReduction.toFixed(0)}%`,
-            sub: `${co2Kg.toFixed(0)} kg CO₂ saved`,
-            borderColor: "#059669",
-            iconBg: "#ECFDF5",
-            iconColor: "#059669",
-            valueColor: "#059669",
+            accent: "#10B981",
+            bg: "#F0FDF4",
+            border: "#D1FAE5",
         },
         {
+            title: "Energy Usage",
+            value: energy.toFixed(0),
+            unit: "kWh",
             icon: Zap,
-            label: "Energy Saved",
-            value: `${energySavings.toFixed(0)}%`,
-            sub: "vs. traditional curing",
-            borderColor: "#D97706",
-            iconBg: "#FEF3C7",
-            iconColor: "#D97706",
-            valueColor: "#D97706",
+            accent: "#D97706",
+            bg: "#FEF3C7",
+            border: "#FDE68A",
         },
         {
-            icon: TrendingDown,
-            label: "Cost Reduction",
-            value: `${costSavings.toFixed(0)}%`,
-            sub: "per cubic meter",
-            borderColor: "#0D9488",
-            iconBg: "#CCFBF1",
-            iconColor: "#0D9488",
-            valueColor: "#0D9488",
+            title: "Recipe Cost",
+            value: Number(cost.toFixed(0)).toLocaleString(),
+            unit: "₹",
+            icon: DollarSign,
+            accent: "#2563EB",
+            bg: "#EFF6FF",
+            border: "#BFDBFE",
         },
     ];
 
     return (
-        <div className="grid grid-cols-3 gap-4">
-            {metrics.map((m, i) => {
-                const Icon = m.icon;
-                return (
-                    <div
-                        key={m.label}
-                        className="card p-4 animate-slide-up"
-                        style={{
-                            animationDelay: `${i * 0.05}s`,
-                            borderLeftWidth: "3px",
-                            borderLeftColor: m.borderColor,
-                        }}
-                    >
-                        <div className="flex items-start gap-3">
+        <div className="card overflow-hidden">
+            <div className="px-5 py-3 border-b border-[#E2E8F0] bg-[#F8FAFC] flex items-center gap-2">
+                <TrendingDown className="w-4 h-4 text-[#64748B]" />
+                <h4 className="text-[12px] font-extrabold text-[#0F172A] uppercase tracking-widest">ESG Impact Summary</h4>
+            </div>
+            <div className="p-5">
+                <div className="grid grid-cols-3 gap-4">
+                    {metrics.map((m) => {
+                        const Icon = m.icon;
+                        return (
                             <div
-                                className="w-9 h-9 rounded-lg flex items-center justify-center shrink-0"
-                                style={{ background: m.iconBg }}
+                                key={m.title}
+                                className="rounded-lg p-3.5 transition-all hover:scale-[1.02]"
+                                style={{ backgroundColor: m.bg, border: `1px solid ${m.border}` }}
                             >
-                                <Icon className="w-4.5 h-4.5" style={{ color: m.iconColor }} />
+                                <div className="flex items-center gap-2 mb-2">
+                                    <div
+                                        className="w-7 h-7 rounded-md flex items-center justify-center"
+                                        style={{ backgroundColor: `${m.accent}20` }}
+                                    >
+                                        <Icon className="w-3.5 h-3.5" style={{ color: m.accent }} />
+                                    </div>
+                                    <p className="text-[10px] font-bold uppercase tracking-wider" style={{ color: m.accent }}>{m.title}</p>
+                                </div>
+                                <div className="flex items-baseline gap-1">
+                                    {m.unit === "₹" && <span className="text-sm font-bold" style={{ color: m.accent }}>₹</span>}
+                                    <span className="text-xl font-extrabold text-[#0F172A] font-mono-data tracking-tight leading-none">
+                                        {m.value}
+                                    </span>
+                                    {m.unit !== "₹" && <span className="text-[11px] font-bold text-[#94A3B8] ml-0.5">{m.unit}</span>}
+                                </div>
                             </div>
-                            <div>
-                                <p className="label mb-1">{m.label}</p>
-                                <p className="text-2xl font-extrabold font-mono-data" style={{ color: m.valueColor }}>
-                                    {m.value}
-                                </p>
-                                <p className="text-[10px] text-[#A8A29E] mt-0.5">{m.sub}</p>
-                            </div>
-                        </div>
-                    </div>
-                );
-            })}
+                        );
+                    })}
+                </div>
+            </div>
         </div>
     );
 }
