@@ -40,7 +40,7 @@ export default function ESGReports() {
             <div className="flex-1 flex flex-col h-full bg-transparent">
                 <Header showExport={true} onExport={() => window.print()} />
                 <main className="flex-1 overflow-auto p-4 md:p-8">
-                    <div className="max-w-[1400px] mx-auto w-full">
+                    <div className="max-w-350 mx-auto w-full">
                         <div className="flex items-center justify-between mb-8 animate-assembly">
                             <div>
                                 <h1 className="text-3xl font-extrabold text-[#0F172A] tracking-tight">Environmental & Economic Impact</h1>
@@ -87,7 +87,7 @@ export default function ESGReports() {
                                 <div className="px-5 py-4 border-b border-[#E2E8F0] bg-[#F8FAFC]">
                                     <h3 className="text-[12px] font-extrabold text-[#0F172A] uppercase tracking-widest">CO₂ Emissions Trend (Kg)</h3>
                                 </div>
-                                <div className="p-6 h-[280px]">
+                                <div className="p-6 h-70">
                                     <ResponsiveContainer width="100%" height={280}>
                                         <AreaChart data={MONTHLY_DATA}>
                                             <defs>
@@ -109,7 +109,7 @@ export default function ESGReports() {
                                 <div className="px-5 py-4 border-b border-[#E2E8F0] bg-[#F8FAFC]">
                                     <h3 className="text-[12px] font-extrabold text-[#0F172A] uppercase tracking-widest">Energy Usage vs Cost Savings</h3>
                                 </div>
-                                <div className="p-6 h-[280px]">
+                                <div className="p-6 h-70">
                                     <ResponsiveContainer width="100%" height={280}>
                                         <BarChart data={MONTHLY_DATA}>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#E2E8F0" />

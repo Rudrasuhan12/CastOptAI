@@ -367,7 +367,6 @@ export default function Dashboard() {
                       paramsChanged={paramsChanged}
                     />
                     
-<<<<<<< main
                     {activeTab === "results" && (
                       <>
                         {/* Phase 2 Controls */}
@@ -424,7 +423,6 @@ export default function Dashboard() {
                         </div>
                       </>
                     )}
-=======
                     {/* Phase 2 Controls */}
                     <div className="flex flex-wrap gap-4 pt-4">
                       <button 
@@ -477,7 +475,6 @@ export default function Dashboard() {
                         performanceReport={analyticsData?.performance_report}
                       />
                     </div>
->>>>>>> main
                   </div>
                 )}
               </div>
