@@ -115,7 +115,7 @@ export default function ActiveCastings() {
             <div className="flex-1 flex flex-col h-full bg-transparent">
                 <Header showExport={false} onExport={() => { }} /> {/* Retained Header props from original */}
                 <main className="flex-1 overflow-auto p-4 md:p-8">
-                    <div className="max-w-[1400px] mx-auto w-full">
+                    <div className="max-w-350 mx-auto w-full">
                         <div className="flex items-center justify-between mb-8 animate-assembly">
                             <div>
                                 <h1 className="text-3xl font-extrabold text-[#0F172A] tracking-tight">Active Castings</h1>
