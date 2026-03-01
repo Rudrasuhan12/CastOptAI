@@ -1,3 +1,4 @@
+import math
 import numpy as np
 import pandas as pd
 from scipy.optimize import minimize
@@ -81,7 +82,7 @@ def calculate_risk(predicted_strength, target_strength):
     buffer_pct = ((predicted_strength - target_strength) / target_strength) * 100
     
 
-    import math
+
     if buffer_pct <= 0:
         confidence = max(40, 50 + buffer_pct)
     elif buffer_pct < 5:
@@ -196,14 +197,13 @@ def run_optimization(objective_fn, target_strength, target_time, temp, humidity,
         chemicals = round(res.x[1], 2)
         steam = round(res.x[2], 1)
         
-        # Validate final recipe against all constraints
-        is_valid, violations = constraint_engine.validate_proposed_recipe(
-            cement, chemicals, steam, water_bounds[1]
-        )
-        
-        if not is_valid:
-            print(f"Constraint violations: {violations}")
-            return None
+        if constraint_engine.get_current_constraints():
+            is_valid, violations = constraint_engine.validate_proposed_recipe(
+                cement, chemicals, steam, water_bounds[1]
+            )
+            if not is_valid:
+                print(f"Constraint violations: {violations}")
+                return None
             
         return cement, chemicals, steam
     return None
@@ -289,9 +289,7 @@ def get_all_strategies(target_strength, target_time, temp, humidity, site_id=Non
             )
             constraint_engine.site_profiles[site_id] = default_profile
             constraint_engine.set_current_site(site_id)
-    """
-    Run optimization for all 3 strategies and return results + baseline.
-    """
+    
     baseline = get_traditional_baseline(target_strength, target_time, temp, humidity)
 
     strategies = []

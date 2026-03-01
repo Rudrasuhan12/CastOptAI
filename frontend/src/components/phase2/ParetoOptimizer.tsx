@@ -1,9 +1,9 @@
 "use client";
 
 import React, { useState } from "react";
-import { 
-  LineChart, Line, XAxis, YAxis, CartesianGrid, 
-  Tooltip, ResponsiveContainer, Scatter, ScatterChart 
+import {
+  ScatterChart, Scatter, XAxis, YAxis, CartesianGrid,
+  Tooltip, ResponsiveContainer
 } from "recharts";
 
 interface ObjectiveWeights {
@@ -41,139 +41,90 @@ export default function ParetoOptimizerPanel({ onOptimize, paretoData }: ParetoO
     environmental: 0.1
   });
 
-  const handleWeightChange = (key: keyof ObjectiveWeights, value: number[]) => {
-    const newWeights = { ...weights, [key]: value[0] };
-    // Normalize weights to sum to 1
-    const total = Object.values(newWeights).reduce((sum, val) => sum + val, 0);
-    const normalizedWeights = {
-      cost: newWeights.cost / total,
-      time: newWeights.time / total,
-      strength: newWeights.strength / total,
-      environmental: newWeights.environmental / total
-    };
-    setWeights(normalizedWeights);
+  const handleWeightChange = (key: keyof ObjectiveWeights, val: number) => {
+    const newWeights = { ...weights, [key]: val };
+    const total = Object.values(newWeights).reduce((sum, v) => sum + v, 0);
+    if (total > 0) {
+      setWeights({
+        cost: newWeights.cost / total,
+        time: newWeights.time / total,
+        strength: newWeights.strength / total,
+        environmental: newWeights.environmental / total
+      });
+    }
   };
 
-  const handleOptimize = () => {
-    onOptimize(weights);
-  };
+  const sliders = [
+    { key: "cost" as const, label: "Cost Priority", color: "#0F172A" },
+    { key: "time" as const, label: "Time Priority", color: "#3B82F6" },
+    { key: "strength" as const, label: "Strength", color: "#10B981" },
+    { key: "environmental" as const, label: "Environmental", color: "#22C55E" },
+  ];
 
   return (
-    <div className="border rounded-lg p-4 bg-white shadow-sm">
-      <div className="mb-4">
-        <h3 className="text-lg font-bold text-gray-800 mb-2">Multi-Objective Optimization</h3>
-        <span className="inline-block bg-yellow-100 text-gray-800 text-xs px-2 py-1 rounded font-bold">
-          Phase 2
-        </span>
+    <div className="card overflow-hidden">
+      <div className="px-5 py-3 bg-[#0F172A] flex items-center gap-2">
+        <h3 className="text-[12px] font-extrabold text-white uppercase tracking-widest">Multi-Objective Optimization</h3>
       </div>
-      
-      {/* Weight Sliders */}
-      <div className="space-y-4 mb-4">
-        <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="font-medium text-gray-700">Cost Priority</span>
-            <span className="font-mono font-bold text-gray-800">{weights.cost.toFixed(2)}</span>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={weights.cost}
-            onChange={(e) => handleWeightChange('cost', [parseFloat(e.target.value)])}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-          />
+      <div className="p-5">
+        <div className="space-y-3 mb-4">
+          {sliders.map((s) => (
+            <div key={s.key}>
+              <div className="flex justify-between text-[11px] mb-1">
+                <span className="font-bold text-[#64748B]">{s.label}</span>
+                <span className="font-mono-data font-extrabold text-[#0F172A]">{weights[s.key].toFixed(2)}</span>
+              </div>
+              <input
+                type="range"
+                min="0"
+                max="1"
+                step="0.01"
+                value={weights[s.key]}
+                onChange={(e) => handleWeightChange(s.key, parseFloat(e.target.value))}
+                className="w-full h-1.5 bg-[#E2E8F0] rounded-full appearance-none cursor-pointer accent-[#0F172A]"
+              />
+            </div>
+          ))}
         </div>
 
-        <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="font-medium text-gray-700">Time Priority</span>
-            <span className="font-mono font-bold text-gray-800">{weights.time.toFixed(2)}</span>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={weights.time}
-            onChange={(e) => handleWeightChange('time', [parseFloat(e.target.value)])}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-          />
-        </div>
+        <button
+          onClick={() => onOptimize(weights)}
+          className="w-full flex items-center justify-center gap-2 px-4 py-2.5 bg-[#0F172A] hover:bg-[#1E293B] text-white text-[11px] font-extrabold uppercase tracking-wider rounded-lg shadow-[3px_3px_0px_#CBD5E1] hover:shadow-[1px_1px_0px_#CBD5E1] transition-all duration-200"
+        >
+          Find Pareto Optimal Solutions
+        </button>
 
-        <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="font-medium text-gray-700">Strength Priority</span>
-            <span className="font-mono font-bold text-gray-800">{weights.strength.toFixed(2)}</span>
+        {paretoData && paretoData.length > 0 && (
+          <div className="mt-5">
+            <h4 className="text-[10px] font-extrabold text-[#0F172A] uppercase tracking-wider mb-3">Pareto Frontier</h4>
+            <div className="h-52">
+              <ResponsiveContainer width="100%" height="100%">
+                <ScatterChart margin={{ top: 10, right: 10, bottom: 10, left: 10 }}>
+                  <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
+                  <XAxis
+                    dataKey="cost"
+                    type="number"
+                    tick={{ fontSize: 9, fill: "#94A3B8" }}
+                    label={{ value: 'Cost (₹)', position: 'insideBottomRight', offset: -5, style: { fontSize: 9 } }}
+                  />
+                  <YAxis
+                    dataKey="strength_score"
+                    type="number"
+                    tick={{ fontSize: 9, fill: "#94A3B8" }}
+                    label={{ value: 'Strength', angle: -90, position: 'insideLeft', style: { fontSize: 9 } }}
+                  />
+                  <Tooltip />
+                  <Scatter data={paretoData} fill="#FFCB05" stroke="#0F172A" strokeWidth={1} />
+                </ScatterChart>
+              </ResponsiveContainer>
+            </div>
           </div>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={weights.strength}
-            onChange={(e) => handleWeightChange('strength', [parseFloat(e.target.value)])}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-          />
-        </div>
+        )}
 
-        <div>
-          <div className="flex justify-between text-sm mb-1">
-            <span className="font-medium text-gray-700">Environmental Priority</span>
-            <span className="font-mono font-bold text-gray-800">{weights.environmental.toFixed(2)}</span>
-          </div>
-          <input
-            type="range"
-            min="0"
-            max="1"
-            step="0.01"
-            value={weights.environmental}
-            onChange={(e) => handleWeightChange('environmental', [parseFloat(e.target.value)])}
-            className="w-full h-2 bg-gray-200 rounded-lg appearance-none cursor-pointer"
-          />
-        </div>
+        {(!paretoData || paretoData.length === 0) && (
+          <p className="mt-4 text-[11px] text-[#94A3B8] text-center">Adjust priorities and click above to find optimal trade-offs</p>
+        )}
       </div>
-
-      {/* Optimize Button */}
-      <button 
-        onClick={handleOptimize}
-        className="w-full bg-gray-800 hover:bg-gray-900 text-white font-bold py-3 px-4 rounded transition-all duration-300"
-      >
-        Find Pareto Optimal Solutions
-      </button>
-
-      {/* Pareto Front Visualization */}
-      {paretoData && paretoData.length > 0 && (
-        <div className="mt-6">
-          <h4 className="text-sm font-bold text-gray-800 mb-3">Pareto Frontier</h4>
-          <div className="h-64">
-            <ResponsiveContainer width="100%" height={260}>
-              <ScatterChart margin={{ top: 20, right: 20, bottom: 20, left: 20 }}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#E2E8F0" />
-                <XAxis 
-                  dataKey="cost" 
-                  type="number"
-                  tick={{ fontSize: 10, fill: "#64748B" }}
-                  label={{ value: 'Cost (₹)', position: 'insideBottomRight', offset: -5 }}
-                />
-                <YAxis 
-                  dataKey="strength_score" 
-                  type="number"
-                  tick={{ fontSize: 10, fill: "#64748B" }}
-                  label={{ value: 'Strength Score', angle: -90, position: 'insideLeft' }}
-                />
-                <Tooltip />
-                <Scatter 
-                  data={paretoData} 
-                  fill="#FFCB05" 
-                  stroke="#0F172A"
-                  strokeWidth={1}
-                />
-              </ScatterChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
