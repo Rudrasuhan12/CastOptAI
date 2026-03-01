@@ -9,10 +9,6 @@ import Header from "@/components/Header";
 import InputPanel from "@/components/InputPanel";
 import EmptyState from "@/components/EmptyState";
 import ResultsPanel from "@/components/ResultsPanel";
-import ParetoOptimizerPanel from "@/components/phase2/ParetoOptimizer";
-import RiskAssessmentPanel from "@/components/phase2/RiskAssessment";
-import PredictiveAnalyticsPanel from "@/components/phase3/PredictiveAnalytics";
-import AdvancedAnalyticsPanel from "@/components/phase3/AdvancedAnalytics";
 
 const AI_SERVICE_URL = process.env.NEXT_PUBLIC_AI_SERVICE_URL || "http://localhost:8000";
 const WEATHER_API_KEY = process.env.NEXT_PUBLIC_OPENWEATHER_API_KEY || "";
@@ -50,20 +46,20 @@ export default function Dashboard() {
   const [selectedStrategy, setSelectedStrategy] = useState(0);
   const [error, setError] = useState("");
   const [activeTab, setActiveTab] = useState<"results" | "whatif" | "learn">("results");
-  
-  // Phase 2 State Variables
+
   const [paretoData, setParetoData] = useState<any>(null);
   const [riskData, setRiskData] = useState<any>(null);
   const [showPhase2, setShowPhase2] = useState(false);
-  
-  // Phase 3 State Variables
   const [predictiveData, setPredictiveData] = useState<any>(null);
   const [analyticsData, setAnalyticsData] = useState<any>(null);
   const [showPhase3, setShowPhase3] = useState(false);
+
+  const [riskLoading, setRiskLoading] = useState(false);
+  const [predictiveLoading, setPredictiveLoading] = useState(false);
+  const [advancedLoading, setAdvancedLoading] = useState(false);
   const [optContext, setOptContext] = useState<OptContext | null>(null);
   const [paramsChanged, setParamsChanged] = useState(false);
 
-  // City to site ID mapping
   const cityToSiteId: Record<string, string> = {
     "Delhi": "delhi_yard",
     "Mumbai": "mumbai_yard",
@@ -100,7 +96,6 @@ export default function Dashboard() {
     setWeatherLoading(false);
   }, []);
 
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchWeather(city);
   }, []);
@@ -113,23 +108,27 @@ export default function Dashboard() {
     setLoading(true);
     setError("");
     setParamsChanged(false);
+    setParetoData(null);
+    setRiskData(null);
+    setPredictiveData(null);
+    setAnalyticsData(null);
     try {
       const siteId = cityToSiteId[city] || city.toLowerCase().replace(/\s+/g, '_') + '_yard';
-      
+
       const res = await axios.post(`${AI_SERVICE_URL}/optimize`, {
         target_strength: targetStrength,
         target_time: targetTime,
         temp: weather.temp,
         humidity: weather.humidity,
         site_id: siteId,
-        use_real_time_data: false,  // Set to true if you want to use real-time data
+        use_real_time_data: false,
       });
       if (res.data.status === "success") {
         setResult(res.data);
         setSelectedStrategy(0);
         setActiveTab("results");
         hasRunRef.current = true;
-        setError(""); // Clear any previous errors
+        setError("");
 
         setOptContext({
           city,
@@ -140,7 +139,6 @@ export default function Dashboard() {
           timestamp: new Date().toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit", second: "2-digit" }),
         });
       } else {
-        // Provide more helpful error messages
         let errorMessage = res.data.message || "Optimization failed.";
         if (errorMessage.includes("too aggressive")) {
           errorMessage = `Could not find optimal recipe. Try: lower strength target (${Math.max(5, targetStrength - 5)} MPa) or longer time (${targetTime + 12} hours)`;
@@ -153,17 +151,16 @@ export default function Dashboard() {
     setLoading(false);
   }, [weather, targetStrength, targetTime, city]);
 
-  // Phase 2 Functions
   const handleParetoOptimize = useCallback(async (weights: any) => {
     if (weather.temp === null) {
       setError("Please select a city first.");
       return;
     }
-    
+
     setLoading(true);
     try {
       const siteId = cityToSiteId[city] || city.toLowerCase().replace(/\s+/g, '_') + '_yard';
-      
+
       const res = await axios.post(`${AI_SERVICE_URL}/phase2/pareto-optimization`, {
         target_strength: targetStrength,
         target_time: targetTime,
@@ -171,10 +168,10 @@ export default function Dashboard() {
         objective_weights: weights,
         constraint_relaxation: 0.1
       });
-      
+
       if (res.data.status === "success") {
         setParetoData(res.data.data.visualization_data.solutions);
-        setRiskData(null); // Clear risk data for fresh analysis
+        setRiskData(null);
         setShowPhase2(true);
         setActiveTab("results");
       } else {
@@ -192,11 +189,11 @@ export default function Dashboard() {
       setError("Please run optimization first.");
       return;
     }
-    
-    setLoading(true);
+
+    setRiskLoading(true);
     try {
       const selectedRecipe = result.strategies[selectedStrategy].recommended_recipe;
-      
+
       const res = await axios.post(`${AI_SERVICE_URL}/phase2/risk-assessment`, {
         recipe: selectedRecipe,
         environmental_conditions: {
@@ -205,7 +202,6 @@ export default function Dashboard() {
         },
         target_strength: targetStrength
       });
-      
       if (res.data.status === "success") {
         setRiskData(res.data.data);
         setShowPhase2(true);
@@ -217,24 +213,22 @@ export default function Dashboard() {
       setError("Cannot connect to CastOpt AI risk assessment service.");
       console.error("Risk assessment error:", err);
     }
-    setLoading(false);
+    setRiskLoading(false);
   }, [result, selectedStrategy, weather, targetStrength]);
-  
-  // Phase 3 Functions
   const handlePredictiveAnalytics = useCallback(async () => {
     if (weather.temp === null) {
       setError("Please select a city first.");
       return;
     }
-      
-    setLoading(true);
+
+    setPredictiveLoading(true);
     try {
       const res = await axios.post(`${AI_SERVICE_URL}/phase3/predictive-analytics`, {
         target_metric: "demand",
         forecast_periods: 30,
         confidence_level: 0.95
       });
-        
+
       if (res.data.status === "success") {
         setPredictiveData(res.data.data);
         setShowPhase3(true);
@@ -246,18 +240,17 @@ export default function Dashboard() {
       setError("Cannot connect to CastOpt AI predictive analytics service.");
       console.error("Predictive analytics error:", err);
     }
-    setLoading(false);
+    setPredictiveLoading(false);
   }, [weather]);
-  
+
   const handleAdvancedAnalytics = useCallback(async () => {
     if (!result || !result.strategies || result.strategies.length === 0) {
       setError("Please run optimization first.");
       return;
     }
-      
-    setLoading(true);
+
+    setAdvancedLoading(true);
     try {
-      // Get recent optimization history for analytics
       const optimizationHistory = [
         {
           target_strength: targetStrength,
@@ -271,12 +264,12 @@ export default function Dashboard() {
           steam_hours: result.strategies[selectedStrategy]?.recommended_recipe?.steam_hours || 0,
         }
       ];
-        
+
       const res = await axios.post(`${AI_SERVICE_URL}/phase3/advanced-analytics`, {
         optimization_history: optimizationHistory,
         analysis_type: "comprehensive"
       });
-        
+
       if (res.data.status === "success") {
         setAnalyticsData(res.data.data);
         setShowPhase3(true);
@@ -288,10 +281,10 @@ export default function Dashboard() {
       setError("Cannot connect to CastOpt AI advanced analytics service.");
       console.error("Advanced analytics error:", err);
     }
-    setLoading(false);
+    setAdvancedLoading(false);
   }, [result, selectedStrategy, targetStrength, targetTime]);
-  
-    
+
+
   useEffect(() => {
 
     if (weather.temp === null) return;
@@ -352,8 +345,7 @@ export default function Dashboard() {
                 )}
 
                 {result && !loading && (
-                  <div className="space-y-6">
-                    {/* Standard Results Panel */}
+                  <div>
                     <ResultsPanel
                       result={result}
                       selectedStrategy={selectedStrategy}
@@ -365,116 +357,18 @@ export default function Dashboard() {
                       targetTime={targetTime}
                       optContext={optContext}
                       paramsChanged={paramsChanged}
+                      onParetoOptimize={handleParetoOptimize}
+                      paretoData={paretoData}
+                      onRiskAssessment={handleRiskAssessment}
+                      riskData={riskData}
+                      riskLoading={riskLoading}
+                      onPredictiveAnalytics={handlePredictiveAnalytics}
+                      predictiveData={predictiveData}
+                      predictiveLoading={predictiveLoading}
+                      onAdvancedAnalytics={handleAdvancedAnalytics}
+                      analyticsData={analyticsData}
+                      advancedLoading={advancedLoading}
                     />
-                    
-                    {activeTab === "results" && (
-                      <>
-                        {/* Phase 2 Controls */}
-                        <div className="flex flex-wrap gap-4 pt-4">
-                          <button 
-                            onClick={handleRiskAssessment}
-                            disabled={loading}
-                            className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded transition-colors disabled:opacity-50"
-                          >
-                            Analyze Risk Profile
-                          </button>
-                        </div>
-                        
-                        {/* Phase 2 Components */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <ParetoOptimizerPanel 
-                            onOptimize={handleParetoOptimize}
-                            paretoData={paretoData}
-                          />
-                          <RiskAssessmentPanel 
-                            riskData={riskData}
-                          />
-                        </div>
-                        
-                        {/* Phase 3 Controls */}
-                        <div className="flex flex-wrap gap-4 pt-4">
-                          <button 
-                            onClick={handlePredictiveAnalytics}
-                            disabled={loading}
-                            className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm font-bold rounded transition-colors disabled:opacity-50"
-                          >
-                            Run Predictive Analytics
-                          </button>
-                          <button 
-                            onClick={handleAdvancedAnalytics}
-                            disabled={loading}
-                            className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold rounded transition-colors disabled:opacity-50"
-                          >
-                            Run Advanced Analytics
-                          </button>
-                        </div>
-                        
-                        {/* Phase 3 Components */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                          <PredictiveAnalyticsPanel 
-                            predictions={predictiveData?.price_predictions}
-                            demandForecasts={predictiveData?.forecasts}
-                          />
-                          <AdvancedAnalyticsPanel 
-                            insights={analyticsData?.pattern_insights}
-                            clusters={analyticsData?.project_clusters}
-                            performanceReport={analyticsData?.performance_report}
-                          />
-                        </div>
-                      </>
-                    )}
-                    {/* Phase 2 Controls */}
-                    <div className="flex flex-wrap gap-4 pt-4">
-                      <button 
-                        onClick={handleRiskAssessment}
-                        disabled={loading}
-                        className="px-4 py-2 bg-orange-500 hover:bg-orange-600 text-white text-sm font-bold rounded transition-colors disabled:opacity-50"
-                      >
-                        Analyze Risk Profile
-                      </button>
-                    </div>
-                    
-                    {/* Phase 2 Components */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <ParetoOptimizerPanel 
-                        onOptimize={handleParetoOptimize}
-                        paretoData={paretoData}
-                      />
-                      <RiskAssessmentPanel 
-                        riskData={riskData}
-                      />
-                    </div>
-                    
-                    {/* Phase 3 Controls */}
-                    <div className="flex flex-wrap gap-4 pt-4">
-                      <button 
-                        onClick={handlePredictiveAnalytics}
-                        disabled={loading}
-                        className="px-4 py-2 bg-purple-500 hover:bg-purple-600 text-white text-sm font-bold rounded transition-colors disabled:opacity-50"
-                      >
-                        Run Predictive Analytics
-                      </button>
-                      <button 
-                        onClick={handleAdvancedAnalytics}
-                        disabled={loading}
-                        className="px-4 py-2 bg-indigo-500 hover:bg-indigo-600 text-white text-sm font-bold rounded transition-colors disabled:opacity-50"
-                      >
-                        Run Advanced Analytics
-                      </button>
-                    </div>
-                    
-                    {/* Phase 3 Components */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <PredictiveAnalyticsPanel 
-                        predictions={predictiveData?.price_predictions}
-                        demandForecasts={predictiveData?.forecasts}
-                      />
-                      <AdvancedAnalyticsPanel 
-                        insights={analyticsData?.pattern_insights}
-                        clusters={analyticsData?.project_clusters}
-                        performanceReport={analyticsData?.performance_report}
-                      />
-                    </div>
                   </div>
                 )}
               </div>

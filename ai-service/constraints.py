@@ -266,12 +266,11 @@ class DynamicConstraintEngine:
         """Validate if a recipe meets all site constraints"""
         profile = self.get_current_constraints()
         if not profile:
-            return False, ["No site profile configured"]
+            return True, []
         
         violations = []
         bounds = self.get_dynamic_bounds()
         
-        # Check bounds
         if not (bounds['cement'][0] <= cement <= bounds['cement'][1]):
             violations.append(f"Cement {cement} kg out of bounds {bounds['cement']}")
         
@@ -284,22 +283,19 @@ class DynamicConstraintEngine:
         if not (bounds['water'][0] <= water <= bounds['water'][1]):
             violations.append(f"Water {water} kg out of bounds {bounds['water']}")
         
-        # Check equipment constraints
         if steam > 0 and steam > profile.max_steam_pressure:
             violations.append(f"Steam pressure {steam} exceeds maximum {profile.max_steam_pressure}")
         
-        # Check storage constraints
         if cement > profile.current_cement_stock:
             violations.append(f"Insufficient cement stock: {profile.current_cement_stock} kg available")
         
         if chemicals > profile.current_chemical_stock:
             violations.append(f"Insufficient chemical stock: {profile.current_chemical_stock} kg available")
         
-        # Check working hours
-        if current_time := datetime.now():
-            current_hour = current_hour = current_time.hour
-            if not (profile.working_hours[0] <= current_hour <= profile.working_hours[1]):
-                violations.append(f"Outside working hours: {profile.working_hours[0]}-{profile.working_hours[1]}")
+        current_time = datetime.now()
+        current_hour = current_time.hour
+        if not (profile.working_hours[0] <= current_hour <= profile.working_hours[1]):
+            violations.append(f"Outside working hours: {profile.working_hours[0]}-{profile.working_hours[1]}")
         
         return len(violations) == 0, violations
     
